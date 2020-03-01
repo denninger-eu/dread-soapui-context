@@ -16,6 +16,34 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// https://github.com/denninger-eu/dread-karate-context
+/**
+ * BSD 2-Clause License
+ * <p>
+ * Copyright (c) 2020, Frank Denninger
+ * All rights reserved.
+ * <p>
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * <p>
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * <p>
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * <p>
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 public class RunnerContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(RunnerContext.class);
     private static final PropertyHolder EMPTY = new PropertyHolder();
@@ -145,31 +173,36 @@ public class RunnerContext {
         }
     }
 
-
-    public RequestContext requestStep(String name) {
-        RequestContext request = new RequestContext(this, name);
+    @SuppressWarnings("WeakerAccess") // Used from karate
+    public RestRequestContext requestStep(String name) {
+        RestRequestContext request = new RestRequestContext(this, name);
         propertyHolders.put(name, request);
         return request;
     }
 
+    @SuppressWarnings("WeakerAccess") // Used from karate
     public PropertyHolder propertiesStep(String name) {
         PropertiesContext properties = new PropertiesContext(this, name);
         propertyHolders.put(name, properties);
         return properties;
     }
 
+    @SuppressWarnings("WeakerAccess") // Used from karate
     public Transfer transfer(String sourceProperty) {
         return new Transfer(this, new Query(sourceProperty, "", ""));
     }
 
+    @SuppressWarnings("WeakerAccess") // Used from karate
     public Transfer transfer(String sourceProperty, String sourceExpression, String sourceLanguage) {
         return new Transfer(this, new Query(sourceProperty, sourceExpression, sourceLanguage));
     }
+
 
     public void setProperty(String property, String value) {
         updateOrCreateProperty(property, value);
     }
 
+    @SuppressWarnings("WeakerAccess") // Used from karate
     public ScriptContext groovyScript(String name) {
         ScriptContext scriptContext = new ScriptContext(this, name);
         propertyHolders.put(name, scriptContext);
@@ -186,10 +219,12 @@ public class RunnerContext {
             this.source = source;
         }
 
+        @SuppressWarnings("WeakerAccess") // Used from karate
         public void to(String targetProperty) {
             to(targetProperty, "", "");
         }
 
+        @SuppressWarnings("WeakerAccess") // Used from karate
         public void to(String targetProperty, String targetExpression, String targetLanguage) {
             String value = context.resolveValue(source);
             LOGGER.info("Source {} resolved to {}", source, value);
@@ -199,19 +234,19 @@ public class RunnerContext {
 
 
     private String resolveValue(Query query) {
-        Property property = resolveProperty(query.property);
+        Property property = resolveProperty(query.getProperty());
         if (property == null || property.value == null) {
             return null;
         }
-        if (query.expression == null || query.expression.isEmpty()) {
-            return property.value;
+        if (query.getExpression() == null || query.getExpression().isEmpty()) {
+            return property.getValue();
         }
 
-        switch (query.language) {
+        switch (query.getLanguage()) {
             case "JSONPATH":
-                return extractJsonPath(property.value, query.expression);
+                return extractJsonPath(property.getValue(), query.getExpression());
             default:
-                throw new UnsupportedOperationException("Language not supported " + query.language);
+                throw new UnsupportedOperationException("Language not supported " + query.getLanguage());
         }
     }
 
@@ -220,7 +255,18 @@ public class RunnerContext {
             updateOrCreateProperty(target.getProperty(), value);
             return;
         }
+        Property property = resolveProperty(target.getProperty());
+        switch (target.getLanguage()) {
+            case "JSONPATH":
+                updateJsonPath(value, property, target.getExpression());
+                return;
+        }
         throw new UnsupportedOperationException();
+    }
+
+    private void updateJsonPath(String value, Property property, String expression) {
+        property.asJsonDocument().set(expression, value);
+        property.makeJsonMain();
     }
 
     private void updateOrCreateProperty(String property, String value) {
@@ -246,6 +292,7 @@ public class RunnerContext {
 
     private static final Pattern EXPRESSION = Pattern.compile("\\$\\{(?<expression>\\=?[-._#a-zA-Z0-9\"]*?)}");
 
+    @SuppressWarnings("WeakerAccess") // Used from karate
     public String expand(String value) {
         if (value == null) {
             return "";
@@ -337,21 +384,21 @@ public class RunnerContext {
         private final String expression;
         private final String language;
 
-        public Query(String property, String expression, String language) {
+        Query(String property, String expression, String language) {
             this.property = property;
             this.expression = expression;
             this.language = language;
         }
 
-        public String getProperty() {
+        String getProperty() {
             return property;
         }
 
-        public String getExpression() {
+        String getExpression() {
             return expression;
         }
 
-        public String getLanguage() {
+        String getLanguage() {
             return language;
         }
     }
@@ -367,7 +414,7 @@ public class RunnerContext {
             this.name = name;
         }
 
-        public DocumentContext asJsonDocument() {
+        DocumentContext asJsonDocument() {
             if (asJson == null) {
                 asJson = JsonPath.parse(value);
             }
@@ -380,10 +427,18 @@ public class RunnerContext {
         }
 
         public String getValue() {
+            if (value == null) {
+                if (asJson != null) {
+                    value = asJson.jsonString();
+                }
+            }
             return value;
         }
 
 
+        void makeJsonMain() {
+            value = null;
+        }
     }
 
     public static class PropertyHolder {
@@ -436,39 +491,43 @@ public class RunnerContext {
     }
 
 
-    public static class RequestContext extends StepContext {
+    public static class RestRequestContext extends StepContext {
         static final String URL = "url";
         static final String REQUEST = "request";
         static final String RESPONSE = "Response";
 
 
-        RequestContext(RunnerContext runnerContext, String name) {
+        RestRequestContext(RunnerContext runnerContext, String name) {
             super(runnerContext, name);
         }
 
+        @SuppressWarnings("WeakerAccess") // Used from karate
         public String url() {
             return expand(getProperty(URL));
         }
 
-        public RequestContext url(String newUrl) {
+        @SuppressWarnings("WeakerAccess") // Used from karate
+        public RestRequestContext url(String newUrl) {
             setProperty(URL, newUrl);
             return this;
         }
 
+        @SuppressWarnings("WeakerAccess") // Used from karate
         public String request() {
             return expand(getProperty(REQUEST));
         }
 
-        public RequestContext request(String request) {
+        @SuppressWarnings("WeakerAccess") // Used from karate
+        public RestRequestContext request(String request) {
             setProperty(REQUEST, request);
             return this;
         }
 
-        public RequestContext request(Object value) {
+        public RestRequestContext request(Object value) {
             if (value == null) {
                 return this;
             } else if (value instanceof Map) {
-                JSONObject jsonObject = new JSONObject((Map) value);
+                @SuppressWarnings("unchecked") JSONObject jsonObject = new JSONObject((Map<String, ?>) value);
                 return request(jsonObject.toJSONString());
             }
 
@@ -479,21 +538,22 @@ public class RunnerContext {
             return expand(getProperty(RESPONSE));
         }
 
-        public RequestContext response(Object response) {
+        public RestRequestContext response(Object response) {
             if (response == null) {
                 return this;
             } else if (response instanceof Map) {
-                JSONObject jsonObject = new JSONObject((Map) response);
+                @SuppressWarnings("unchecked") JSONObject jsonObject = new JSONObject((Map) response);
                 return response(jsonObject.toJSONString());
             }
             throw new IllegalArgumentException("Unsupported type for request: " + response.getClass().getName());
         }
 
-        public RequestContext response(String response) {
+        public RestRequestContext response(String response) {
             setProperty(RESPONSE, response);
             return this;
         }
 
+        @SuppressWarnings("WeakerAccess")
         public boolean assertJsonExists(String expression) {
             try {
                 DocumentContext document = getProperty(RESPONSE).asJsonDocument();
@@ -521,10 +581,12 @@ public class RunnerContext {
             }
         }
 
+        @SuppressWarnings("WeakerAccess") // Used from karate
         public ScriptContext script(Reader reader) {
             return script(RunnerContext.toString(reader));
         }
 
+        @SuppressWarnings("WeakerAccess") // Used from karate
         public ScriptContext script(String script) {
             setProperty(SCRIPT, script);
             return this;
@@ -534,6 +596,7 @@ public class RunnerContext {
             setProperty(RESULT, result);
         }
 
+        @SuppressWarnings("WeakerAccess") // Used from karate
         public String execute() {
             String result = doExecute();
             setProperty(RESULT, result);
@@ -565,7 +628,7 @@ public class RunnerContext {
         }
     }
 
-    private static final String toString(Reader reader) {
+    private static String toString(Reader reader) {
         StringBuilder builder = new StringBuilder();
         char[] buffer = new char[4096];
         int length;

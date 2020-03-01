@@ -4,32 +4,32 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-public class RunnerContextRequestContextTest {
+class RestRequestStepTest {
 
     RunnerContext context = new RunnerContext();
-    RunnerContext.RequestContext request = context.requestStep("test");
+    RunnerContext.RestRequestContext request = context.requestStep("test");
 
     @Test
-    public void urlSetAndGet() {
+    void urlSetAndGet() {
         request.url("urlValue");
         Assertions.assertEquals("urlValue", request.url());
     }
 
     @Test
     @Disabled
-    public void urlSetAndReadExpanded() {
+    void urlSetAndReadExpanded() {
 
     }
 
     @Test
-    public void requestSetAndGet() {
+    void requestSetAndGet() {
         request.request("{}");
         Assertions.assertEquals("{}", request.request());
     }
 
 
     @Test
-    public void assertJsonExists_existsInJson() {
+    void assertJsonExists_existsInJson() {
         request.response("{\"id\": \"val\"}");
         Assertions.assertTrue(request.assertJsonExists("$.id"));
     }
