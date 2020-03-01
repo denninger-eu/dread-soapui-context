@@ -64,4 +64,14 @@ public class RunnerContextGroovyTest {
 
         Assertions.assertEquals("scriptUpdate", context.resolvePropertyValue("#Project#property"));
     }
+
+    @Test
+    void script_resolveTestStepByName() {
+        context.requestStep("requestStepName").request("requestContent");
+        RunnerContext.ScriptContext script = context.groovyScript("script")
+                .script("def testStep = testRunner.testCase.testSteps[\"requestStepName\"]; testStep.httpRequest.requestContent;");
+        String result = script.execute();
+        Assertions.assertEquals("requestContent", result);
+    }
+
 }

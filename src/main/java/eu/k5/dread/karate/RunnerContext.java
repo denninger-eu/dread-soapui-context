@@ -9,7 +9,10 @@ import org.slf4j.LoggerFactory;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,7 +50,7 @@ import java.util.regex.Pattern;
  */
 public class RunnerContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(RunnerContext.class);
-    private static final PropertyHolder EMPTY = new PropertyHolder();
+    private static final PropertyHolder EMPTY = new PropertyHolder("empty");
     private static final String GLOBAL = "Global";
     private static final String PROJECT = "Project";
     private static final String TEST_SUITE = "TestSuite";
@@ -59,9 +62,9 @@ public class RunnerContext {
 
     public RunnerContext() {
         propertyHolders.put(GLOBAL, SoapUI.getGlobalProperties());
-        propertyHolders.put(PROJECT, new PropertyHolder());
-        propertyHolders.put(TEST_SUITE, new PropertyHolder());
-        propertyHolders.put(TEST_CASE, new PropertyHolder());
+        propertyHolders.put(PROJECT, new PropertyHolder(PROJECT));
+        propertyHolders.put(TEST_SUITE, new PropertyHolder(TEST_SUITE));
+        propertyHolders.put(TEST_CASE, new PropertyHolder(TEST_CASE));
     }
 
     public String sleep(long duration) {
@@ -85,8 +88,9 @@ public class RunnerContext {
             scriptEngine = getScriptEngineManager().getEngineByName("groovy");
             ProjectWrapper project = new ProjectWrapper(propertyHolders.get(PROJECT));
             TestSuiteWrapper testSuite = new TestSuiteWrapper(project, propertyHolders.get(TEST_SUITE));
-            TestCaseWrapper testCase = new TestCaseWrapper(testSuite, propertyHolders.get(TEST_CASE));
+            TestCaseWrapper testCase = new TestCaseWrapper(this, testSuite, propertyHolders.get(TEST_CASE));
             scriptEngine.put("testRunner", new TestRunner(this, testCase));
+            scriptEngine.put("log", )
 
         }
         return scriptEngine;
@@ -125,8 +129,12 @@ public class RunnerContext {
     public static class TestCaseWrapper implements SoapUiWrapper {
         private final TestSuiteWrapper testSuite;
         private final PropertyHolder propertyHolder;
+        private final RunnerContext runnerContext;
 
-        TestCaseWrapper(TestSuiteWrapper testSuite, PropertyHolder propertyHolder) {
+        private Map<String, TestStepWrapper> testSteps;
+
+        TestCaseWrapper(RunnerContext runnerContext, TestSuiteWrapper testSuite, PropertyHolder propertyHolder) {
+            this.runnerContext = runnerContext;
             this.testSuite = testSuite;
             this.propertyHolder = propertyHolder;
         }
@@ -139,6 +147,52 @@ public class RunnerContext {
         public TestSuiteWrapper getTestSuite() {
             return testSuite;
         }
+
+        public Map<String, TestStepWrapper> getTestSteps() {
+            if (testSteps == null) {
+                testSteps = new HashMap<>();
+                for (PropertyHolder step : runnerContext.propertyHolders.values()) {
+                    TestStepWrapper wrapper = new TestStepWrapper(step);
+                    testSteps.put(step.getName(), wrapper);
+                }
+            }
+            return testSteps;
+        }
+    }
+
+    public static class TestStepWrapper implements SoapUiWrapper {
+        private final PropertyHolder propertyHolder;
+
+        public TestStepWrapper(PropertyHolder propertyHolder) {
+            this.propertyHolder = propertyHolder;
+        }
+
+        @Override
+        public PropertyHolder getPropertyHolder() {
+            return propertyHolder;
+        }
+
+        public HttpRequestWrapper getHttpRequest() {
+            return new HttpRequestWrapper(propertyHolder.getProperty(RestRequestContext.REQUEST));
+        }
+    }
+
+
+    public static class HttpRequestWrapper {
+        private final Property property;
+
+        public HttpRequestWrapper(Property property) {
+            this.property = property;
+        }
+
+        public String getRequestContent() {
+            return property.getValue();
+        }
+
+        public void setRequestContent(String value) {
+            property.setValue(value);
+        }
+
     }
 
     public static class TestSuiteWrapper implements SoapUiWrapper {
@@ -444,7 +498,11 @@ public class RunnerContext {
 
     public static class PropertyHolder {
         private final Map<String, Property> properties = new HashMap<>();
+        private final String name;
 
+        public PropertyHolder(String name) {
+            this.name = name;
+        }
 
         public void setProperty(String name, String value) {
             properties.computeIfAbsent(name, Property::new).setValue(value);
@@ -459,17 +517,20 @@ public class RunnerContext {
             properties.put(name, property);
             return property;
         }
+
+        public String getName() {
+            return name;
+        }
     }
 
     public static class StepContext extends PropertyHolder {
         private final RunnerContext runnerContext;
         private final Map<String, String> properties = new HashMap<>();
-        private final String name;
 
 
         StepContext(RunnerContext runnerContext, String name) {
+            super(name);
             this.runnerContext = runnerContext;
-            this.name = name;
         }
 
         String expand(Property property) {
@@ -478,6 +539,7 @@ public class RunnerContext {
             }
             return runnerContext.expand(property.getValue());
         }
+
 
         RunnerContext getRunnerContext() {
             return runnerContext;

@@ -33,7 +33,7 @@ import eu.k5.dread.karate.RunnerContext;
  */
 public class SoapUI {
     private static final SoapUI INSTANCE = new SoapUI();
-    private RunnerContext.PropertyHolder propertyHolder = new RunnerContext.PropertyHolder();
+    private RunnerContext.PropertyHolder propertyHolder = new RunnerContext.PropertyHolder("Gobal");
 
     public static SoapUI getInstance() {
         return INSTANCE;
