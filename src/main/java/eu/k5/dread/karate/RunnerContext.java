@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -90,10 +92,20 @@ public class RunnerContext {
             TestSuiteWrapper testSuite = new TestSuiteWrapper(project, propertyHolders.get(TEST_SUITE));
             TestCaseWrapper testCase = new TestCaseWrapper(this, testSuite, propertyHolders.get(TEST_CASE));
             scriptEngine.put("testRunner", new TestRunner(this, testCase));
-            scriptEngine.put("log", )
-
+            scriptEngine.put("log", resolveLogger());
         }
         return scriptEngine;
+    }
+
+    private static Object resolveLogger() {
+        try {
+            Class<?> log4j = Class.forName("org.apache.log4j.Logger");
+            Method factoryMethod = log4j.getDeclaredMethod("getRootLogger");
+            return factoryMethod.invoke(null);
+        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            LoggerFactory.getLogger(RunnerContext.class).info("Using slf4j");
+        }
+        return LoggerFactory.getLogger(RunnerContext.class);
     }
 
     public static class TestRunner {
@@ -173,7 +185,7 @@ public class RunnerContext {
         }
 
         public HttpRequestWrapper getHttpRequest() {
-            return new HttpRequestWrapper(propertyHolder.getProperty(RestRequestContext.REQUEST));
+            return new HttpRequestWrapper(propertyHolder.getOrCreateProperty(RestRequestContext.REQUEST));
         }
     }
 
@@ -181,7 +193,7 @@ public class RunnerContext {
     public static class HttpRequestWrapper {
         private final Property property;
 
-        public HttpRequestWrapper(Property property) {
+        HttpRequestWrapper(Property property) {
             this.property = property;
         }
 
@@ -512,6 +524,11 @@ public class RunnerContext {
             return properties.get(name);
         }
 
+        public Property getOrCreateProperty(String name) {
+            return properties.computeIfAbsent(name, this::createProperty);
+        }
+
+
         public Property createProperty(String name) {
             Property property = new Property(name);
             properties.put(name, property);
@@ -521,6 +538,7 @@ public class RunnerContext {
         public String getName() {
             return name;
         }
+
     }
 
     public static class StepContext extends PropertyHolder {
@@ -704,6 +722,7 @@ public class RunnerContext {
             throw new IllegalArgumentException("Unable to read from reader", exc);
         }
     }
+
 }
 
 

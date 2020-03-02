@@ -74,4 +74,12 @@ public class RunnerContextGroovyTest {
         Assertions.assertEquals("requestContent", result);
     }
 
+    @Test
+    void script_withLogger() {
+        RunnerContext.ScriptContext script = context.groovyScript("script")
+                .script("log.info(\"test\"); \"result\";");
+        String result = script.execute();
+        Assertions.assertEquals("result", result);
+    }
+
 }
