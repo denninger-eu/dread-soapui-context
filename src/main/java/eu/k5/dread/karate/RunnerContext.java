@@ -5,14 +5,20 @@ import com.jayway.jsonpath.*;
 import net.minidev.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.*;
+import org.xml.sax.SAXException;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
@@ -314,13 +320,33 @@ public class RunnerContext {
         if (query.getExpression() == null || query.getExpression().isEmpty()) {
             return property.getValue();
         }
-
         switch (query.getLanguage()) {
             case "JSONPATH":
-                return extractJsonPath(property.getValue(), query.getExpression());
+                return extractJsonPath(property, query.getExpression());
+            case "XPATH":
+                return extractXPath(property, query.getExpression());
+
             default:
                 throw new UnsupportedOperationException("Language not supported " + query.getLanguage());
         }
+    }
+
+    private String extractXPath(Property property, String expression) {
+        try {
+            Document document = property.asXmlDocument();
+            XPath xPath = XPathFactory.newInstance().newXPath();
+            NodeList nodeList = (NodeList) xPath.compile(expression).evaluate(document, XPathConstants.NODESET);
+            if (nodeList.getLength() == 1) {
+                Node item = nodeList.item(0);
+                if (item instanceof Element){
+                    return item.getFirstChild().getNodeValue();
+                }
+                return item.getNodeValue();
+            }
+        } catch (XPathExpressionException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     private void updateValue(Query target, String value) {
@@ -333,6 +359,7 @@ public class RunnerContext {
             case "JSONPATH":
                 updateJsonPath(value, property, target.getExpression());
                 return;
+
         }
         throw new UnsupportedOperationException();
     }
@@ -350,9 +377,9 @@ public class RunnerContext {
         resolvedProperty.setValue(value);
     }
 
-    private String extractJsonPath(String json, String expression) {
+    private String extractJsonPath(Property property, String expression) {
         try {
-            return JsonPath.read(json, expression);
+            return property.asJsonDocument().read(expression);
         } catch (InvalidJsonException exception) {
             LOGGER.warn("Unable to parse json: {}", exception.getMessage(), exception);
             return "";
@@ -429,7 +456,9 @@ public class RunnerContext {
 
     Property resolveProperty(String property) {
         String[] parts = property.split("#");
-        if (parts.length == 2) {
+        if (parts.length == 1) {
+            return compositePropertyHolder.getProperty(property);
+        } else if (parts.length == 2) {
             return getPropertyHolder(parts[0]).getProperty(parts[1]);
         } else if (parts.length == 3) {
             return getPropertyHolder(parts[1]).getProperty(parts[2]);
@@ -482,6 +511,7 @@ public class RunnerContext {
         private String value;
 
         private DocumentContext asJson;
+        private Document asXmlDocument;
 
         private Property(String name) {
             this.name = name;
@@ -494,9 +524,23 @@ public class RunnerContext {
             return asJson;
         }
 
+        public Document asXmlDocument() {
+            if (asXmlDocument == null) {
+                try {
+                    DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder builder = builderFactory.newDocumentBuilder();
+                    asXmlDocument = builder.parse(new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8)));
+                } catch (IOException | SAXException | ParserConfigurationException e) {
+                    throw new RuntimeException("Unable to parse value", e);
+                }
+            }
+            return asXmlDocument;
+        }
+
         public void setValue(String value) {
             this.value = value;
             asJson = null;
+            asXmlDocument = null;
         }
 
         public String getValue() {
@@ -507,7 +551,6 @@ public class RunnerContext {
             }
             return value;
         }
-
 
         void makeJsonMain() {
             value = null;

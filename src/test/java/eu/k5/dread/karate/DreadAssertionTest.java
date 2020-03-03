@@ -33,4 +33,6 @@ public class DreadAssertionTest {
         step.response("[{\"key\":\"value\"}]");
         Assertions.assertTrue(step.assertJsonExists("$[0]"));
     }
+
+
 }
