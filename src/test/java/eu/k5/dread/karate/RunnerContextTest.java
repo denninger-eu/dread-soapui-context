@@ -76,4 +76,11 @@ class RunnerContextTest {
     }
 
 
+    @Test
+    void expandPropertiesWithOutPrefix() {
+        context.propertiesStep("name").setProperty("key", "value");
+        RunnerContext.Property property = context.resolveProperty("#key");
+        Assertions.assertEquals("value", property.getValue());
+    }
+
 }

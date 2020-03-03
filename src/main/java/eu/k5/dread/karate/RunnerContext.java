@@ -16,7 +16,9 @@ import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -59,6 +61,8 @@ public class RunnerContext {
     private static final String TEST_CASE = "TestCase";
     private final Map<String, PropertyHolder> propertyHolders = new HashMap<>();
 
+    private final CompositePropertyHolder compositePropertyHolder = new CompositePropertyHolder("");
+
     private ScriptEngineManager scriptEngineManager;
     private ScriptEngine scriptEngine;
 
@@ -67,6 +71,7 @@ public class RunnerContext {
         propertyHolders.put(PROJECT, new PropertyHolder(PROJECT));
         propertyHolders.put(TEST_SUITE, new PropertyHolder(TEST_SUITE));
         propertyHolders.put(TEST_CASE, new PropertyHolder(TEST_CASE));
+        propertyHolders.put("", compositePropertyHolder);
     }
 
     public String sleep(long duration) {
@@ -251,6 +256,7 @@ public class RunnerContext {
     public PropertyHolder propertiesStep(String name) {
         PropertiesContext properties = new PropertiesContext(this, name);
         propertyHolders.put(name, properties);
+        compositePropertyHolder.addDelegate(properties);
         return properties;
     }
 
@@ -357,7 +363,7 @@ public class RunnerContext {
         }
     }
 
-    private static final Pattern EXPRESSION = Pattern.compile("\\$\\{(?<expression>\\=?[-._#a-zA-Z0-9\"]*?)}");
+    private static final Pattern EXPRESSION = Pattern.compile("\\$\\{(?<expression>\\=?[-._#a-zA-Z0-9\"\\(\\)]*?)}");
 
     @SuppressWarnings("WeakerAccess") // Used from karate
     public String expand(String value) {
@@ -561,6 +567,39 @@ public class RunnerContext {
 
         RunnerContext getRunnerContext() {
             return runnerContext;
+        }
+    }
+
+    public static class CompositePropertyHolder extends PropertyHolder {
+        private List<PropertyHolder> delegates = new ArrayList<>();
+
+        public CompositePropertyHolder(String name) {
+            super(name);
+        }
+
+        @Override
+        public Property getProperty(String name) {
+            for (PropertyHolder delegate : delegates) {
+                Property property = delegate.getProperty(name);
+                if (property != null) {
+                    return property;
+                }
+            }
+            return null;
+        }
+
+        void addDelegate(PropertyHolder delegate) {
+            delegates.add(delegate);
+        }
+
+        @Override
+        public Property getOrCreateProperty(String name) {
+            throw new UnsupportedOperationException("unsupported");
+        }
+
+        @Override
+        public void setProperty(String name, String value) {
+            throw new UnsupportedOperationException("unsupported");
         }
     }
 

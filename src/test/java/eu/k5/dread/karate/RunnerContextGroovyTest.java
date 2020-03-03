@@ -3,12 +3,19 @@ package eu.k5.dread.karate;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
+
 public class RunnerContextGroovyTest {
     RunnerContext context = new RunnerContext();
 
     @Test
     void expandWithInlineGroovy_returnsExpanded() {
         Assertions.assertEquals("inlineString", context.expand("${=\"inlineString\"}"));
+    }
+
+    @Test
+    void expandWithInlineGroovyMethodCall_returnsExpanded() {
+        Assertions.assertEquals(LocalDate.now().toString(), context.expand("${=java.time.LocalDate.now()}"));
     }
 
     @Test
@@ -82,4 +89,5 @@ public class RunnerContextGroovyTest {
         Assertions.assertEquals("result", result);
     }
 
+    
 }
