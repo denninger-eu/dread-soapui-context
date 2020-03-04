@@ -60,7 +60,6 @@ import java.util.regex.Pattern;
  */
 public class RunnerContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(RunnerContext.class);
-    private static final PropertyHolder EMPTY = new PropertyHolder("empty");
     private static final String GLOBAL = "Global";
     private static final String PROJECT = "Project";
     private static final String TEST_SUITE = "TestSuite";
@@ -304,11 +303,22 @@ public class RunnerContext {
         }
 
         @SuppressWarnings("WeakerAccess") // Used from karate
-        public void to(String targetProperty, String targetExpression, String targetLanguage) {
+        public String to(String targetProperty, String targetExpression, String targetLanguage) {
             String value = context.resolveValue(source);
             LOGGER.info("Source {} resolved to {}", source, value);
-            context.updateValue(new Query(targetProperty, targetExpression, targetLanguage), value);
+            Query target = new Query(targetProperty, targetExpression, targetLanguage);
+            context.updateValue(target, value);
+
+            return "Transfer " + source + " to " + target + " '" + shorten(value, 50) + "'";
+
         }
+    }
+
+    private static String shorten(String value, int maxLength) {
+        if (value == null) {
+            return null;
+        }
+        return value.substring(0, Math.min(maxLength, value.length()));
     }
 
 
@@ -338,7 +348,7 @@ public class RunnerContext {
             NodeList nodeList = (NodeList) xPath.compile(expression).evaluate(document, XPathConstants.NODESET);
             if (nodeList.getLength() == 1) {
                 Node item = nodeList.item(0);
-                if (item instanceof Element){
+                if (item instanceof Element) {
                     return item.getFirstChild().getNodeValue();
                 }
                 return item.getNodeValue();
@@ -503,6 +513,15 @@ public class RunnerContext {
         String getLanguage() {
             return language;
         }
+
+        @Override
+        public String toString() {
+            if (expression == null && language == null) {
+                return property;
+            } else {
+                return property + " " + language + "('" + expression + "')";
+            }
+        }
     }
 
 
@@ -656,7 +675,7 @@ public class RunnerContext {
 
     public static class RestRequestContext extends StepContext {
         static final String URL = "url";
-        static final String REQUEST = "request";
+        static final String REQUEST = "Request";
         static final String RESPONSE = "Response";
 
 

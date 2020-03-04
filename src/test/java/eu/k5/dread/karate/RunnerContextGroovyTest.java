@@ -25,7 +25,8 @@ public class RunnerContextGroovyTest {
 
     @Test
     void expandWithInlineInvalidGoovy_returnsExpanded() {
-        Assertions.assertEquals("No such property: x for class: Script2", context.expand("${=\"inlineString\"x}"));
+        String errorText = "No such property: x for class";
+        Assertions.assertEquals(errorText, context.expand("${=\"inlineString\"x}").substring(0, errorText.length()));
     }
 
 
@@ -89,5 +90,23 @@ public class RunnerContextGroovyTest {
         Assertions.assertEquals("result", result);
     }
 
-    
+
+    @Test
+    void script_withSlurper() {
+        context.requestStep("request").request("{ \"name\": \"John Doe\" }");
+        RunnerContext.ScriptContext script = context.groovyScript("script").script(
+                "import groovy.json.JsonSlurper; " +
+                        " def jsonSlurper = new JsonSlurper();" +
+                        " def json = testRunner.testCase.testSteps['request'].httpRequest.requestContent;" +
+                        " log.info(json);" +
+                        " def object = jsonSlurper.parseText(json);" +
+                        " testRunner.testCase.testSteps['request'].httpRequest.requestContent = object.name;" +
+                        " object.name;");
+
+        String result = script.execute();
+        Assertions.assertEquals("John Doe", context.resolveProperty("#request#Request").getValue());
+
+    }
+
+
 }
