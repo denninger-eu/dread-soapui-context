@@ -259,6 +259,9 @@ public class RunnerContext {
 
     @SuppressWarnings("WeakerAccess") // Used from karate
     public PropertyHolder propertiesStep(String name) {
+        if (propertyHolders.containsKey(name)) {
+            throw new IllegalArgumentException("Context name already used");
+        }
         PropertiesContext properties = new PropertiesContext(this, name);
         propertyHolders.put(name, properties);
         compositePropertyHolder.addDelegate(properties);
@@ -451,10 +454,15 @@ public class RunnerContext {
         Property property = resolveProperty(expression);
         if (property == null) {
             return "";
+        } else if (property.getExpandedValue() != null) {
+            return property.getExpandedValue();
         } else {
-            return property.value;
+            String expanded = expand(property.value);
+            property.setExpandedValue(expanded);
+            return expanded;
         }
     }
+
 
     String resolvePropertyValue(String propertyName) {
         Property property = resolveProperty(propertyName);
@@ -529,6 +537,8 @@ public class RunnerContext {
         private final String name;
         private String value;
 
+        private String expandedValue;
+
         private DocumentContext asJson;
         private Document asXmlDocument;
 
@@ -560,20 +570,32 @@ public class RunnerContext {
             this.value = value;
             asJson = null;
             asXmlDocument = null;
+            expandedValue = null;
         }
 
         public String getValue() {
             if (value == null) {
                 if (asJson != null) {
                     value = asJson.jsonString();
+                    expandedValue = null;
                 }
             }
             return value;
         }
 
+        public String getExpandedValue() {
+            return expandedValue;
+        }
+
+        public void setExpandedValue(String expandedValue) {
+            this.expandedValue = expandedValue;
+        }
+
         void makeJsonMain() {
             value = null;
         }
+
+
     }
 
     public static class PropertyHolder {
@@ -808,6 +830,7 @@ public class RunnerContext {
             }
             return property.value;
         }
+
     }
 
     private static String toString(Reader reader) {

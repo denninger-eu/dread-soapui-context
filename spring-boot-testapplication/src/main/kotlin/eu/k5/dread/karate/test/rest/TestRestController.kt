@@ -1,5 +1,6 @@
 package eu.k5.dread.karate.test.rest
 
+import org.slf4j.LoggerFactory
 import org.springframework.web.bind.annotation.*
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -12,10 +13,9 @@ open class TestRestController() {
         return ArrayList(repository.values)
     }
 
-
     @RequestMapping(value = ["/resources"], method = [RequestMethod.POST])
     fun postResource(@RequestBody resource: TestResource): TestResource {
-        println("Received payload: " + resource.payload)
+        LOGGER.info("Received payload: {}", resource.payload)
 
         val id = UUID.randomUUID().toString()
         resource.id = id
@@ -25,7 +25,7 @@ open class TestRestController() {
 
     @RequestMapping(value = ["/resources/{id}"], method = [RequestMethod.PUT])
     fun putResource(@PathVariable("id") id: String, @RequestBody resource: TestResource): TestResource {
-        println(resource)
+        LOGGER.info("Updated Resource {} {}", id, resource)
         repository[id] = resource
         return resource
     }
@@ -37,6 +37,7 @@ open class TestRestController() {
 
     companion object {
         val repository = ConcurrentHashMap<String, TestResource>()
+        private val LOGGER = LoggerFactory.getLogger(TestRestController::class.java)
     }
 }
 

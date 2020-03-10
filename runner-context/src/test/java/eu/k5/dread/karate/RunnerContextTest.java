@@ -1,7 +1,10 @@
 package eu.k5.dread.karate;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
 
 class RunnerContextTest {
     RunnerContext context = new RunnerContext();
@@ -56,7 +59,6 @@ class RunnerContextTest {
         Assertions.assertEquals("value", context.resolveProperty("#Project#test").getValue());
     }
 
-
     @Test
     void expandNullReturnsEmptyString() {
         Assertions.assertEquals("", context.expand(null));
@@ -83,12 +85,40 @@ class RunnerContextTest {
         Assertions.assertEquals("propertyValue", context.expand("${#Project#value}"));
     }
 
-
     @Test
     void expandPropertiesWithOutPrefix() {
         context.propertiesStep("name").setProperty("key", "value");
         RunnerContext.Property property = context.resolveProperty("#key");
         Assertions.assertEquals("value", property.getValue());
+    }
+
+    @Test
+    void expand_recursiveProperties_expandsRecursive() {
+        RunnerContext.PropertyHolder properties = context.propertiesStep("properties");
+        properties.setProperty("property", "${=\"value\"}");
+        properties.setProperty("indirect", "${#properties#property}");
+        String indirect = context.expand("${#properties#indirect}");
+
+        Assertions.assertEquals("value", indirect);
+    }
+
+    @Test
+    @Disabled("will cause stackOverflow")
+    void expand_recursiveProperties_expandsRecursive_overflowDetection() {
+        RunnerContext.PropertyHolder properties = context.propertiesStep("properties");
+        properties.setProperty("first", "${#properties#second}");
+        properties.setProperty("second", "${#properties#first}");
+        String indirect = context.expand("${#properties#first}");
+
+        Assertions.assertEquals("value", indirect);
+    }
+
+    @Test
+    void expand_doubleExpand_createSameResult() {
+        context.propertiesStep("properties").setProperty("uuid", "${=java.util.UUID.randomUUID().toString()}");
+        String first = context.expand("${#properties#uuid}");
+        String second = context.expand("${#properties#uuid}");
+        Assertions.assertEquals(first, second);
     }
 
 }

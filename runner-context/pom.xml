@@ -12,6 +12,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <junit.version>5.5.2</junit.version>
+        <karate.version>0.9.4</karate.version>
     </properties>
 
 
@@ -41,11 +42,16 @@
         <dependency>
             <groupId>com.intuit.karate</groupId>
             <artifactId>karate-apache</artifactId>
-            <version>0.9.4</version>
+            <version>${karate.version}</version>
             <scope>provided</scope>
-
         </dependency>
 
+        <dependency>
+            <groupId>com.intuit.karate</groupId>
+            <artifactId>karate-junit5</artifactId>
+            <version>${karate.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.codehaus.groovy</groupId>

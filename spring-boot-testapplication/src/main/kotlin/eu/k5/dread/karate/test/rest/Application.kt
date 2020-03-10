@@ -16,8 +16,6 @@ open class Application {
     @Bean
     open fun commandLineRunner(ctx: ApplicationContext): CommandLineRunner {
         return CommandLineRunner {
-            println("Let's inspect the beans provided by Spring Boot:")
-
             val beanNames = ctx.beanDefinitionNames
             Arrays.sort(beanNames)
             for (beanName in beanNames) {
