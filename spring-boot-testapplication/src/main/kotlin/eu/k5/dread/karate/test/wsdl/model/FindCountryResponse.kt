@@ -5,10 +5,10 @@ import javax.xml.bind.annotation.XmlAccessorType
 import javax.xml.bind.annotation.XmlElement
 import javax.xml.bind.annotation.XmlRootElement
 
-@XmlRootElement(name = "getCountryRequest", namespace = Model.NAMESPACE)
+@XmlRootElement(name = "findCountryResponse", namespace = Model.NAMESPACE)
 @XmlAccessorType(XmlAccessType.NONE)
-class GetCountryRequest {
+class FindCountryResponse {
 
-    @XmlElement(name = "id", namespace = Model.NAMESPACE)
-    var id: String? = null
+    @XmlElement(name = "country", namespace = Model.NAMESPACE)
+    var country: Country? = null
 }

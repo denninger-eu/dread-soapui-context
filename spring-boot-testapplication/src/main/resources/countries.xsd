@@ -14,12 +14,28 @@
     <xs:element name="getCountryRequest">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="name" type="xs:string"/>
+                <xs:element name="id" type="xs:string"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
 
     <xs:element name="getCountryResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="country" type="tns:country"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="findCountryRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="name" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="findCountryResponse">
         <xs:complexType>
             <xs:sequence>
                 <xs:element name="country" type="tns:country"/>

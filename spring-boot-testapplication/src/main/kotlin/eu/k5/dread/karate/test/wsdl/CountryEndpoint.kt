@@ -16,6 +16,14 @@ constructor(private val countryRepository: CountryRepository) {
     @ResponsePayload
     open fun getCountry(@RequestPayload request: GetCountryRequest): GetCountryResponse {
         val response = GetCountryResponse()
+        response.country = countryRepository.getCountry(request.id ?: "")
+        return response
+    }
+
+    @PayloadRoot(namespace = Model.Companion.NAMESPACE, localPart = "findCountryRequest")
+    @ResponsePayload
+    open fun findCountry(@RequestPayload request: FindCountryRequest): FindCountryResponse {
+        val response = FindCountryResponse()
         response.country = countryRepository.findCountry(request.name ?: "")
         return response
     }
@@ -24,6 +32,7 @@ constructor(private val countryRepository: CountryRepository) {
     @ResponsePayload
     open fun getCountries(@RequestPayload request: GetCountriesRequest): GetCountriesResponse {
         val response = GetCountriesResponse()
+        countryRepository.getCountries()
         return response
     }
 
