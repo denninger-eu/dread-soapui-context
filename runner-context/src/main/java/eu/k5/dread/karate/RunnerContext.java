@@ -7,6 +7,7 @@ import com.sun.org.apache.xpath.internal.objects.XObject;
 import groovy.json.JsonSlurper;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
+import net.minidev.json.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -383,7 +384,8 @@ public class RunnerContext {
     }
 
     private void updateJsonPath(String value, Property property, String expression) {
-        property.asJsonDocument().set(expression, value);
+        Object parse = JSONValue.parse(value);
+        property.asJsonDocument().set(expression, parse);
         property.makeJsonMain();
     }
 
@@ -786,6 +788,8 @@ public class RunnerContext {
             } else if (response instanceof Map) {
                 @SuppressWarnings("unchecked") JSONObject jsonObject = new JSONObject((Map) response);
                 return response(jsonObject.toJSONString());
+            } else if (response instanceof JSONArray) {
+                return response(((JSONArray) response).toJSONString());
             }
             throw new IllegalArgumentException("Unsupported type for request: " + response.getClass().getName());
         }

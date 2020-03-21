@@ -1,5 +1,6 @@
 package eu.k5.dread.karate;
 
+import net.minidev.json.JSONArray;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -22,11 +23,18 @@ class RestRequestStepTest {
     }
 
     @Test
+    void responseSetArrayAndGet() {
+        JSONArray array = new JSONArray();
+        array.add(1);
+        request.response(array);
+        Assertions.assertEquals("[1]", request.response());
+    }
+
+    @Test
     void requestSetAndGet() {
         request.request("{}");
         Assertions.assertEquals("{}", request.request());
     }
-
 
     @Test
     void assertJsonExists_existsInJson() {

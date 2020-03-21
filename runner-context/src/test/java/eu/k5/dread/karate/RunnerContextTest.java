@@ -80,6 +80,16 @@ class RunnerContextTest {
     }
 
     @Test
+    void transferJsonIntoInvalidJsonPath() {
+        context.setProperty("#Project#test", "{\"key\": \"insertedValue\"}");
+        context.requestStep("test").response("{ \"value\": \"before\" }");
+        context.transfer("#Project#test").to("#test#Response", "$.value", "JSONPATH");
+
+        RunnerContext.Property property = context.resolveProperty("#test#Response");
+        Assertions.assertEquals("{\"value\":{\"key\":\"insertedValue\"}}", property.getValue());
+    }
+
+    @Test
     void transferFromValidXPath() {
         context.requestStep("test").response("<xml><element>value</element></xml>");
         context.transfer("#test#Response", "//element", "XPATH").to("#Project#test");
