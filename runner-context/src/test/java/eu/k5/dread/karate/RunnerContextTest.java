@@ -27,6 +27,33 @@ class RunnerContextTest {
     }
 
     @Test
+    void transferFormJsonWithArrayPathSelectFirstEndsWith() {
+        context.requestStep("test").response("[{ \"value\": \"val\", \"id\":\"idval\"}, { \"value\": \"val\", \"id\":\"idval\"}]");
+        context.transfer("#test#Response", "$[?(@.value == 'val')].id[0]", "JSONPATH").to("#Project#test");
+
+        RunnerContext.Property property = context.resolveProperty("#Project#test");
+        Assertions.assertEquals("idval", property.getValue());
+    }
+
+    @Test
+    void transferFormJsonWithArrayPathSelectFirstInline() {
+        context.requestStep("test").response("[{ \"value\": \"val\", \"id\":\"idval\"}, { \"value\": \"val\", \"id\":\"idval\"}]");
+        context.transfer("#test#Response", "$[?(@.value == 'val')][0].id", "JSONPATH").to("#Project#test");
+
+        RunnerContext.Property property = context.resolveProperty("#Project#test");
+        Assertions.assertEquals("idval", property.getValue());
+    }
+
+    @Test
+    void transferFormJsonWithArrayPathSelectFirstInline_noResult() {
+        context.requestStep("test").response("[{ \"value\": \"val\", \"id\":\"idval\"}, { \"value\": \"val\", \"id\":\"idval\"}]");
+        context.transfer("#test#Response", "$[?(@.value == 'valX')][0].id", "JSONPATH").to("#Project#test");
+
+        RunnerContext.Property property = context.resolveProperty("#Project#test");
+        Assertions.assertEquals("[]", property.getValue());
+    }
+
+    @Test
     void transferFromInvalidJsonWithJsonPath() {
         context.requestStep("test").response("{ \"value\": \"val\"");
         context.transfer("#test#Response", "$.value", "JSONPATH").to("#Project#test");
@@ -40,6 +67,7 @@ class RunnerContextTest {
         context.requestStep("test").response("{ \"value\": \"val\"");
         context.transfer("#test#Response", "$.value", "JSONPATH").to("#Project#test");
     }
+
 
     @Test
     void transferIntoInvalidJsonPath() {

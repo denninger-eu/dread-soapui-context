@@ -2,11 +2,19 @@ package eu.k5.dread.karate;
 
 import com.eviware.soapui.SoapUI;
 import com.jayway.jsonpath.*;
+import com.jayway.jsonpath.spi.json.AbstractJsonProvider;
+import com.sun.org.apache.xpath.internal.objects.XObject;
+import groovy.json.JsonSlurper;
+import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import sun.security.krb5.Config;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -22,10 +30,7 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -392,11 +397,54 @@ public class RunnerContext {
 
     private String extractJsonPath(Property property, String expression) {
         try {
-            return property.asJsonDocument().read(expression);
-        } catch (InvalidJsonException exception) {
+
+            Object read = property.asJsonDocument().read(JsonPath.compile(expression), JSONArray.class);
+            boolean selectFirst = false;
+
+            // No result, doing some hacks outside the spec of jsonpath to try to read something
+            if (read instanceof JSONArray && ((JSONArray) read).isEmpty()) {
+                expression = expression.trim();
+                if (expression.endsWith("[0]")) {
+                    // JsonPath sucks, you can't select the first entry from an result array in jsonpath itself.
+                    // do it manually, using jsonpath ending with [0] as indicator to do it
+                    // https://github.com/json-path/JsonPath/issues/272
+                    Object temp = property.asJsonDocument().read(JsonPath.compile(expression.substring(0, expression.length() - 3)), JSONArray.class);
+                    if (temp instanceof JSONArray && !((JSONArray) temp).isEmpty()) {
+                        // Only overwrite original result, if actually something was found
+                        selectFirst = true;
+                        read = temp;
+                    }
+                }
+                if (((JSONArray) read).isEmpty() && expression.contains("[0]")) {
+                    // JsonPath sucks, you can't select the first entry from an result array in jsonpath itself.
+                    // do it manually, using jsonpath with [0] as indicator to do it
+                    // https://github.com/json-path/JsonPath/issues/272
+                    Object temp = property.asJsonDocument().read(JsonPath.compile(expression.replace("[0]", "")), JSONArray.class);
+                    selectFirst = true;
+                    if (temp instanceof JSONArray && !((JSONArray) temp).isEmpty()) {
+                        // Only overwrite original result, if actually something was found
+                        selectFirst = true;
+                        read = temp;
+                    }
+                }
+            }
+            if (read instanceof JSONArray) {
+                JSONArray array = (JSONArray) read;
+                if (!array.isEmpty() && selectFirst) {
+                    return array.get(0).toString();
+                }
+                return array.toString();
+            } else if (read != null) {
+                return read.toString();
+            } else {
+                return "";
+            }
+        } catch (
+                InvalidJsonException exception) {
             LOGGER.warn("Unable to parse json: {}", exception.getMessage(), exception);
             return "";
-        } catch (InvalidPathException exception) {
+        } catch (
+                InvalidPathException exception) {
             LOGGER.warn("Unable to parse jsonpath expression: {}", exception.getMessage(), exception);
             return "";
 
