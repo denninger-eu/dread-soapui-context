@@ -399,42 +399,32 @@ public class RunnerContext {
         try {
 
             Object read = property.asJsonDocument().read(JsonPath.compile(expression), JSONArray.class);
-            boolean selectFirst = false;
 
             // No result, doing some hacks outside the spec of jsonpath to try to read something
             if (read instanceof JSONArray && ((JSONArray) read).isEmpty()) {
                 expression = expression.trim();
                 if (expression.endsWith("[0]")) {
+                    // removing just the last array access seems more stable than to remove all; try that first
+
                     // JsonPath sucks, you can't select the first entry from an result array in jsonpath itself.
                     // do it manually, using jsonpath ending with [0] as indicator to do it
                     // https://github.com/json-path/JsonPath/issues/272
                     Object temp = property.asJsonDocument().read(JsonPath.compile(expression.substring(0, expression.length() - 3)), JSONArray.class);
                     if (temp instanceof JSONArray && !((JSONArray) temp).isEmpty()) {
-                        // Only overwrite original result, if actually something was found
-                        selectFirst = true;
-                        read = temp;
+                        return ((JSONArray) temp).get(0).toString();
                     }
                 }
-                if (((JSONArray) read).isEmpty() && expression.contains("[0]")) {
+                if (expression.contains("[0]")) {
                     // JsonPath sucks, you can't select the first entry from an result array in jsonpath itself.
                     // do it manually, using jsonpath with [0] as indicator to do it
                     // https://github.com/json-path/JsonPath/issues/272
                     Object temp = property.asJsonDocument().read(JsonPath.compile(expression.replace("[0]", "")), JSONArray.class);
-                    selectFirst = true;
                     if (temp instanceof JSONArray && !((JSONArray) temp).isEmpty()) {
-                        // Only overwrite original result, if actually something was found
-                        selectFirst = true;
-                        read = temp;
+                        return ((JSONArray) temp).get(0).toString();
                     }
                 }
             }
-            if (read instanceof JSONArray) {
-                JSONArray array = (JSONArray) read;
-                if (!array.isEmpty() && selectFirst) {
-                    return array.get(0).toString();
-                }
-                return array.toString();
-            } else if (read != null) {
+            if (read != null) {
                 return read.toString();
             } else {
                 return "";
