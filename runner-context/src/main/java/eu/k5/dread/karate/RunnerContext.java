@@ -1,10 +1,11 @@
 package eu.k5.dread.karate;
 
 import com.eviware.soapui.SoapUI;
-import com.jayway.jsonpath.*;
-import com.jayway.jsonpath.spi.json.AbstractJsonProvider;
-import com.sun.org.apache.xpath.internal.objects.XObject;
-import groovy.json.JsonSlurper;
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.InvalidJsonException;
+import com.jayway.jsonpath.InvalidPathException;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
@@ -15,7 +16,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
-import sun.security.krb5.Config;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -384,8 +384,16 @@ public class RunnerContext {
     }
 
     private void updateJsonPath(String value, Property property, String expression) {
-        Object parse = JSONValue.parse(value);
-        property.asJsonDocument().set(expression, parse);
+        if (value != null && value.trim().startsWith("{") && value.trim().endsWith("}")) {
+            Object parse = JSONValue.parse(value);
+            if (parse != null) {
+                property.asJsonDocument().set(expression, parse);
+            } else {
+                property.asJsonDocument().set(expression, value);
+            }
+        } else {
+            property.asJsonDocument().set(expression, value);
+        }
         property.makeJsonMain();
     }
 

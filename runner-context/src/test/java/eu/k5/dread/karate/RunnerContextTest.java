@@ -70,7 +70,7 @@ class RunnerContextTest {
 
 
     @Test
-    void transferIntoInvalidJsonPath() {
+    void transferIntoValidJsonPath() {
         context.setProperty("#Project#test", "insertedValue");
         context.requestStep("test").response("{ \"value\": \"before\" }");
         context.transfer("#Project#test").to("#test#Response", "$.value", "JSONPATH");
@@ -80,7 +80,7 @@ class RunnerContextTest {
     }
 
     @Test
-    void transferJsonIntoInvalidJsonPath() {
+    void transferJsonIntoValidJsonPath() {
         context.setProperty("#Project#test", "{\"key\": \"insertedValue\"}");
         context.requestStep("test").response("{ \"value\": \"before\" }");
         context.transfer("#Project#test").to("#test#Response", "$.value", "JSONPATH");
@@ -88,6 +88,17 @@ class RunnerContextTest {
         RunnerContext.Property property = context.resolveProperty("#test#Response");
         Assertions.assertEquals("{\"value\":{\"key\":\"insertedValue\"}}", property.getValue());
     }
+
+    @Test
+    void transferInvalidJsonIntoValidJsonPath() {
+        context.setProperty("#Project#test", "{\"key\" \"insertedValue\"}");
+        context.requestStep("test").response("{ \"value\": \"before\" }");
+        context.transfer("#Project#test").to("#test#Response", "$.value", "JSONPATH");
+
+        RunnerContext.Property property = context.resolveProperty("#test#Response");
+        Assertions.assertEquals("{\"value\":{\"key\":\"insertedValue\"}}", property.getValue());
+    }
+
 
     @Test
     void transferFromValidXPath() {
