@@ -96,7 +96,7 @@ class RunnerContextTest {
         context.transfer("#Project#test").to("#test#Response", "$.value", "JSONPATH");
 
         RunnerContext.Property property = context.resolveProperty("#test#Response");
-        Assertions.assertEquals("{\"value\":{\"key\":\"insertedValue\"}}", property.getValue());
+        Assertions.assertEquals("{\"value\":\"{\\\"key\\\" \\\"insertedValue\\\"}\"}", property.getValue());
     }
 
 

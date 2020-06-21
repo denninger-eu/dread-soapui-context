@@ -13,13 +13,15 @@ class RestRequestStepTest {
     @Test
     void urlSetAndGet() {
         request.url("urlValue");
+        RestRequestStepTest[] x = {new RestRequestStepTest(), new RestRequestStepTest()};
         Assertions.assertEquals("urlValue", request.url());
     }
 
     @Test
-    @Disabled
     void urlSetAndReadExpanded() {
-
+        context.setProperty("#Global#baseUrl", "base");
+        request.url("${#Global#baseUrl}/url");
+        Assertions.assertEquals("base/url", request.url());
     }
 
     @Test
