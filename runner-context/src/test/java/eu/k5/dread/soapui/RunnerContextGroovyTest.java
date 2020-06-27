@@ -1,4 +1,4 @@
-package eu.k5.dread.karate;
+package eu.k5.dread.soapui;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 
 public class RunnerContextGroovyTest {
-    RunnerContext context = new RunnerContext();
+    SoapuiContext context = new SoapuiContext();
 
     @Test
     void expandWithInlineGroovy_returnsExpanded() {
@@ -32,7 +32,7 @@ public class RunnerContextGroovyTest {
 
     @Test
     void script() {
-        RunnerContext.ScriptContext script = context.groovyScript("name").script("\"Test\"");
+        SoapuiContext.ScriptContext script = context.groovyScript("name").script("\"Test\"");
         String result = script.execute();
         Assertions.assertEquals("Test", result);
     }
@@ -41,7 +41,7 @@ public class RunnerContextGroovyTest {
     void scriptSoapUiApi_getPropertyValue() {
         context.setProperty("#TestCase#property", "value");
         String script = "testRunner.testCase.getPropertyValue(\"property\")";
-        RunnerContext.ScriptContext scriptContext = context.groovyScript("name");
+        SoapuiContext.ScriptContext scriptContext = context.groovyScript("name");
         scriptContext.script(script).execute();
         Assertions.assertEquals("value", scriptContext.result());
     }
@@ -50,7 +50,7 @@ public class RunnerContextGroovyTest {
     void scriptSoapUiApi_ProjectGetPropertyValue() {
         context.setProperty("#Project#property", "value");
         String script = "testRunner.testCase.testSuite.project.getPropertyValue(\"property\")";
-        RunnerContext.ScriptContext scriptContext = context.groovyScript("name");
+        SoapuiContext.ScriptContext scriptContext = context.groovyScript("name");
         scriptContext.script(script).execute();
         Assertions.assertEquals("value", scriptContext.result());
     }
@@ -58,7 +58,7 @@ public class RunnerContextGroovyTest {
     @Test
     void scriptSoapUiApi_setPropertyValue() {
         String script = "testRunner.testCase.setPropertyValue(\"property\", \"scriptUpdate\")";
-        RunnerContext.ScriptContext scriptContext = context.groovyScript("name");
+        SoapuiContext.ScriptContext scriptContext = context.groovyScript("name");
         scriptContext.script(script).execute();
 
         Assertions.assertEquals("scriptUpdate", context.resolvePropertyValue("#TestCase#property"));
@@ -67,7 +67,7 @@ public class RunnerContextGroovyTest {
     @Test
     void scriptSoapUiApi_ProjectSetPropertyValue() {
         String script = "testRunner.testCase.testSuite.project.setPropertyValue(\"property\", \"scriptUpdate\")";
-        RunnerContext.ScriptContext scriptContext = context.groovyScript("name");
+        SoapuiContext.ScriptContext scriptContext = context.groovyScript("name");
         scriptContext.script(script).execute();
 
         Assertions.assertEquals("scriptUpdate", context.resolvePropertyValue("#Project#property"));
@@ -76,7 +76,7 @@ public class RunnerContextGroovyTest {
     @Test
     void script_resolveTestStepByName() {
         context.requestStep("requestStepName").request("requestContent");
-        RunnerContext.ScriptContext script = context.groovyScript("script")
+        SoapuiContext.ScriptContext script = context.groovyScript("script")
                 .script("def testStep = testRunner.testCase.testSteps[\"requestStepName\"]; testStep.httpRequest.requestContent;");
         String result = script.execute();
         Assertions.assertEquals("requestContent", result);
@@ -84,7 +84,7 @@ public class RunnerContextGroovyTest {
 
     @Test
     void script_withLogger() {
-        RunnerContext.ScriptContext script = context.groovyScript("script")
+        SoapuiContext.ScriptContext script = context.groovyScript("script")
                 .script("log.info(\"test\"); \"result\";");
         String result = script.execute();
         Assertions.assertEquals("result", result);
@@ -94,7 +94,7 @@ public class RunnerContextGroovyTest {
     @Test
     void script_withSlurper() {
         context.requestStep("request").request("{ \"name\": \"John Doe\" }");
-        RunnerContext.ScriptContext script = context.groovyScript("script").script(
+        SoapuiContext.ScriptContext script = context.groovyScript("script").script(
                 "import groovy.json.JsonSlurper; " +
                         " def jsonSlurper = new JsonSlurper();" +
                         " def json = testRunner.testCase.testSteps['request'].httpRequest.requestContent;" +

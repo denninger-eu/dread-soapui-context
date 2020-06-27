@@ -1,4 +1,4 @@
-package eu.k5.dread.karate.manual;
+package eu.k5.dread.soapui.karate;
 
 import com.intuit.karate.junit5.Karate;
 

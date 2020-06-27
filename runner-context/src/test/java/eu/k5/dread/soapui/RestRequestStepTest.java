@@ -1,14 +1,13 @@
-package eu.k5.dread.karate;
+package eu.k5.dread.soapui;
 
 import net.minidev.json.JSONArray;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class RestRequestStepTest {
 
-    RunnerContext context = new RunnerContext();
-    RunnerContext.RestRequestContext request = context.requestStep("test");
+    SoapuiContext context = new SoapuiContext();
+    SoapuiContext.RestRequestContext request = context.requestStep("test");
 
     @Test
     void urlSetAndGet() {

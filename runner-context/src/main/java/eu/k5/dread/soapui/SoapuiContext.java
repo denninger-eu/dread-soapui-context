@@ -1,4 +1,4 @@
-package eu.k5.dread.karate;
+package eu.k5.dread.soapui;
 
 import com.eviware.soapui.SoapUI;
 import com.jayway.jsonpath.DocumentContext;
@@ -64,8 +64,8 @@ import java.util.regex.Pattern;
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-public class RunnerContext {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RunnerContext.class);
+public class SoapuiContext {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SoapuiContext.class);
     private static final String GLOBAL = "Global";
     private static final String PROJECT = "Project";
     private static final String TEST_SUITE = "TestSuite";
@@ -77,7 +77,7 @@ public class RunnerContext {
     private ScriptEngineManager scriptEngineManager;
     private ScriptEngine scriptEngine;
 
-    public RunnerContext() {
+    public SoapuiContext() {
         propertyHolders.put(GLOBAL, SoapUI.getGlobalProperties());
         propertyHolders.put(PROJECT, new PropertyHolder(PROJECT));
         propertyHolders.put(TEST_SUITE, new PropertyHolder(TEST_SUITE));
@@ -119,16 +119,16 @@ public class RunnerContext {
             Method factoryMethod = log4j.getDeclaredMethod("getRootLogger");
             return factoryMethod.invoke(null);
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            LoggerFactory.getLogger(RunnerContext.class).info("Using slf4j");
+            LoggerFactory.getLogger(SoapuiContext.class).info("Using slf4j");
         }
-        return LoggerFactory.getLogger(RunnerContext.class);
+        return LoggerFactory.getLogger(SoapuiContext.class);
     }
 
     public static class TestRunner {
-        private final RunnerContext runnerContext;
+        private final SoapuiContext runnerContext;
         private final TestCaseWrapper testCase;
 
-        TestRunner(RunnerContext runnerContext, TestCaseWrapper testCase) {
+        TestRunner(SoapuiContext runnerContext, TestCaseWrapper testCase) {
             this.runnerContext = runnerContext;
             this.testCase = testCase;
         }
@@ -157,11 +157,11 @@ public class RunnerContext {
     public static class TestCaseWrapper implements SoapUiWrapper {
         private final TestSuiteWrapper testSuite;
         private final PropertyHolder propertyHolder;
-        private final RunnerContext runnerContext;
+        private final SoapuiContext runnerContext;
 
         private Map<String, TestStepWrapper> testSteps;
 
-        TestCaseWrapper(RunnerContext runnerContext, TestSuiteWrapper testSuite, PropertyHolder propertyHolder) {
+        TestCaseWrapper(SoapuiContext runnerContext, TestSuiteWrapper testSuite, PropertyHolder propertyHolder) {
             this.runnerContext = runnerContext;
             this.testSuite = testSuite;
             this.propertyHolder = propertyHolder;
@@ -298,10 +298,10 @@ public class RunnerContext {
 
     public static class Transfer {
 
-        private final RunnerContext context;
+        private final SoapuiContext context;
         private final Query source;
 
-        Transfer(RunnerContext context, Query source) {
+        Transfer(SoapuiContext context, Query source) {
             this.context = context;
             this.source = source;
         }
@@ -680,11 +680,11 @@ public class RunnerContext {
     }
 
     public static class StepContext extends PropertyHolder {
-        private final RunnerContext runnerContext;
+        private final SoapuiContext runnerContext;
         private final Map<String, String> properties = new HashMap<>();
 
 
-        StepContext(RunnerContext runnerContext, String name) {
+        StepContext(SoapuiContext runnerContext, String name) {
             super(name);
             this.runnerContext = runnerContext;
         }
@@ -697,7 +697,7 @@ public class RunnerContext {
         }
 
 
-        RunnerContext getRunnerContext() {
+        SoapuiContext getRunnerContext() {
             return runnerContext;
         }
     }
@@ -737,7 +737,7 @@ public class RunnerContext {
 
     public static class PropertiesContext extends StepContext {
 
-        PropertiesContext(RunnerContext runnerContext, String name) {
+        PropertiesContext(SoapuiContext runnerContext, String name) {
             super(runnerContext, name);
         }
     }
@@ -749,7 +749,7 @@ public class RunnerContext {
         static final String RESPONSE = "Response";
 
 
-        RestRequestContext(RunnerContext runnerContext, String name) {
+        RestRequestContext(SoapuiContext runnerContext, String name) {
             super(runnerContext, name);
         }
 
@@ -823,7 +823,7 @@ public class RunnerContext {
         private static final String SCRIPT = "script";
         private static final String RESULT = "result";
 
-        ScriptContext(RunnerContext runnerContext, String name) {
+        ScriptContext(SoapuiContext runnerContext, String name) {
             super(runnerContext, name);
         }
 
@@ -837,7 +837,7 @@ public class RunnerContext {
 
         @SuppressWarnings("WeakerAccess") // Used from karate
         public ScriptContext script(Reader reader) {
-            return script(RunnerContext.toString(reader));
+            return script(SoapuiContext.toString(reader));
         }
 
         @SuppressWarnings("WeakerAccess") // Used from karate
@@ -884,7 +884,13 @@ public class RunnerContext {
     }
 
     private static String toString(Reader reader) {
+
+        int[] ints = "string".codePoints().toArray();
+
+
+
         StringBuilder builder = new StringBuilder();
+
         char[] buffer = new char[4096];
         int length;
         try {

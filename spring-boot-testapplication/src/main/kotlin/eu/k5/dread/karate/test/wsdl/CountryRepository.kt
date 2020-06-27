@@ -2,7 +2,7 @@ package eu.k5.dread.karate.test.wsdl
 
 import eu.k5.dread.karate.test.wsdl.model.Country
 import org.springframework.stereotype.Component
-import java.lang.IllegalArgumentException
+import java.nio.file.Files
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import javax.annotation.PostConstruct

@@ -1,6 +1,6 @@
 package com.eviware.soapui;
 
-import eu.k5.dread.karate.RunnerContext;
+import eu.k5.dread.soapui.SoapuiContext;
 
 // https://github.com/denninger-eu/dread-karate-context
 
@@ -33,13 +33,13 @@ import eu.k5.dread.karate.RunnerContext;
  */
 public class SoapUI {
     private static final SoapUI INSTANCE = new SoapUI();
-    private RunnerContext.PropertyHolder propertyHolder = new RunnerContext.PropertyHolder("Gobal");
+    private SoapuiContext.PropertyHolder propertyHolder = new SoapuiContext.PropertyHolder("Gobal");
 
     public static SoapUI getInstance() {
         return INSTANCE;
     }
 
-    public static RunnerContext.PropertyHolder getGlobalProperties() {
+    public static SoapuiContext.PropertyHolder getGlobalProperties() {
         return getInstance().propertyHolder;
     }
 }
