@@ -7,11 +7,16 @@ public class ManualRunner {
 
     @Karate.Test
     public Karate generated() {
-        return new Karate().feature("classpath:generated/restrunnable/main.feature");
+        return new Karate().feature("classpath:generated/restrunnable/main.feature", "classpath:restrunnable/main.feature");
     }
 
     @Karate.Test
     public Karate manual() {
-        return new Karate().feature("classpath:manual/minimal.feature");
+        return new Karate().feature("classpath:manual/minimal.feature", "classpath:restrunnable/main.feature");
+    }
+
+    @Karate.Test
+    public Karate restrunnable() {
+        return new Karate().feature("classpath:restrunnable/main.feature");
     }
 }

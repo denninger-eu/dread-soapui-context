@@ -34,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 // https://github.com/denninger-eu/dread-karate-context
 
@@ -76,8 +77,15 @@ public class SoapuiContext {
 
     private ScriptEngineManager scriptEngineManager;
     private ScriptEngine scriptEngine;
+    private Object testcase;
+
 
     public SoapuiContext() {
+        this(null);
+    }
+
+    public SoapuiContext(Object testcase) {
+        this.testcase = testcase;
         propertyHolders.put(GLOBAL, SoapUI.getGlobalProperties());
         propertyHolders.put(PROJECT, new PropertyHolder(PROJECT));
         propertyHolders.put(TEST_SUITE, new PropertyHolder(TEST_SUITE));
@@ -92,6 +100,23 @@ public class SoapuiContext {
             Thread.currentThread().interrupt();
         }
         return "";
+    }
+
+    public String read(String fileName) {
+        if (testcase == null) {
+            throw new IllegalStateException("Testcase required to read files");
+        }
+        try (InputStream is = testcase.getClass().getResourceAsStream(fileName)) {
+            if (is == null) {
+                throw new IllegalArgumentException("File '" + fileName + "' not found in package" + testcase.getClass().getPackage().toString());
+
+            }
+            try (Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+                return toString(reader);
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to read file: " + fileName);
+        }
     }
 
     private synchronized ScriptEngineManager getScriptEngineManager() {
@@ -258,6 +283,9 @@ public class SoapuiContext {
 
     @SuppressWarnings("WeakerAccess") // Used from karate
     public RestRequestContext requestStep(String name) {
+        if (propertyHolders.containsKey(name)) {
+            return (RestRequestContext) propertyHolders.get(name);
+        }
         RestRequestContext request = new RestRequestContext(this, name);
         propertyHolders.put(name, request);
         return request;
@@ -291,6 +319,9 @@ public class SoapuiContext {
 
     @SuppressWarnings("WeakerAccess") // Used from karate
     public ScriptContext groovyScript(String name) {
+        if (propertyHolders.containsKey(name)) {
+            return (ScriptContext) propertyHolders.get(name);
+        }
         ScriptContext scriptContext = new ScriptContext(this, name);
         propertyHolders.put(name, scriptContext);
         return scriptContext;
@@ -307,8 +338,8 @@ public class SoapuiContext {
         }
 
         @SuppressWarnings("WeakerAccess") // Used from karate
-        public void to(String targetProperty) {
-            to(targetProperty, "", "");
+        public String to(String targetProperty) {
+            return to(targetProperty, "", "");
         }
 
         @SuppressWarnings("WeakerAccess") // Used from karate
@@ -527,7 +558,8 @@ public class SoapuiContext {
         } else if (parts.length == 2) {
             return getPropertyHolder(parts[0]).getProperty(parts[1]);
         } else if (parts.length == 3) {
-            return getPropertyHolder(parts[1]).getProperty(parts[2]);
+            PropertyHolder propertyHolder = getPropertyHolder(parts[1]);
+            return propertyHolder.getProperty(parts[2]);
         }
         throw new IllegalArgumentException("unsupported format");
     }
@@ -543,7 +575,11 @@ public class SoapuiContext {
     }
 
     private PropertyHolder getPropertyHolder(String name) {
-        return propertyHolders.get(name);
+        PropertyHolder propertyHolder = propertyHolders.get(name);
+        if (propertyHolder == null) {
+            throw new IllegalArgumentException("Unable to get PropertyHolder: " + name);
+        }
+        return propertyHolder;
     }
 
 
@@ -747,7 +783,7 @@ public class SoapuiContext {
         static final String URL = "url";
         static final String REQUEST = "Request";
         static final String RESPONSE = "Response";
-
+        static final String STATUS = "Status";
 
         RestRequestContext(SoapuiContext runnerContext, String name) {
             super(runnerContext, name);
@@ -807,6 +843,11 @@ public class SoapuiContext {
             return this;
         }
 
+        public RestRequestContext status(int status) {
+            setProperty(STATUS, Integer.toString(status));
+            return this;
+        }
+
         @SuppressWarnings("WeakerAccess")
         public boolean assertJsonExists(String expression) {
             try {
@@ -816,6 +857,27 @@ public class SoapuiContext {
             } catch (PathNotFoundException exception) {
                 return false;
             }
+        }
+
+        @SuppressWarnings("WeakerAccess")
+        public void assertJsonPathExists(String expression, String expected) {
+            boolean exists = Boolean.parseBoolean(expected);
+            boolean actual = assertJsonExists(expression);
+            if (exists != actual) {
+                throw new IllegalArgumentException("json path does not exists '" + expression + "' in \n" + response());
+            }
+        }
+
+        public void assertStatus(int... status) {
+            int actualStatus = Integer.valueOf(getProperty(STATUS).value);
+
+            boolean match = IntStream.of(status).anyMatch(s -> s == actualStatus);
+            if (!match) {
+                throw new IllegalArgumentException("Expected status " + Arrays.toString(status) + " actual " + actualStatus + " in \n" + response());
+            }
+        }
+
+        public void readRequest(String s) {
         }
     }
 
@@ -886,7 +948,6 @@ public class SoapuiContext {
     private static String toString(Reader reader) {
 
         int[] ints = "string".codePoints().toArray();
-
 
 
         StringBuilder builder = new StringBuilder();

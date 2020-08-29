@@ -38,6 +38,11 @@ public class RunnerContextGroovyTest {
     }
 
     @Test
+    void script_createWithSameName_returnsFirst() {
+        Assertions.assertSame(context.groovyScript("name"), context.groovyScript("name"));
+    }
+
+    @Test
     void scriptSoapUiApi_getPropertyValue() {
         context.setProperty("#TestCase#property", "value");
         String script = "testRunner.testCase.getPropertyValue(\"property\")";

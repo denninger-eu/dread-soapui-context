@@ -25,6 +25,13 @@
         </plugins>
     </build>
     <dependencies>
+
+
+        <dependency>
+            <groupId>eu.k5.dread</groupId>
+            <artifactId>dread-karate-context</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -55,12 +62,14 @@
             <artifactId>groovy-json</artifactId>
         </dependency>
 
+
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
         </dependency>
 
     </dependencies>
+
 
     <dependencyManagement>
         <dependencies>
@@ -76,6 +85,14 @@
                 <artifactId>json-path</artifactId>
                 <version>2.4.0</version>
                 <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy-jsr223</artifactId>
+                <version>2.4.7</version>
+                <type>jar</type>
+                <scope>provided</scope>
             </dependency>
 
             <dependency>

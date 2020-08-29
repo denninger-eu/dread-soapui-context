@@ -1,13 +1,11 @@
 package eu.k5.dread.restassured;
 
-import io.restassured.RestAssured;
 import io.restassured.response.Response;
-import io.restassured.response.ValidatableResponse;
 import org.junit.jupiter.api.Test;
 
-import static io.restassured.RestAssured.*;
-import static io.restassured.matcher.RestAssuredMatchers.*;
-import static org.hamcrest.Matchers.*;
+import static io.restassured.RestAssured.get;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
 
 public class LottoTest {
 
@@ -26,6 +24,10 @@ public class LottoTest {
 
     @Test
     public void postWithBody() {
+
+        int[] array = new int[0];
+
+
         String body = get("/lotto").then() //
                 .body("lotto.lottoId", equalTo(5)) //
                 .extract().body().asString();

@@ -34,5 +34,23 @@ public class DreadAssertionTest {
         Assertions.assertTrue(step.assertJsonExists("$[0]"));
     }
 
+    @Test
+    public void assertStatus_noError() {
+        SoapuiContext.RestRequestContext step = context.requestStep("step");
+        step.status(200);
+        step.assertStatus(202, 200);
+    }
+
+    @Test
+    public void assertStatus_fail() {
+        SoapuiContext.RestRequestContext step = context.requestStep("step");
+        step.status(200);
+        try {
+            step.assertStatus(202, 201);
+            Assertions.fail("Should cause exception");
+        } catch (IllegalArgumentException e) {
+
+        }
+    }
 
 }

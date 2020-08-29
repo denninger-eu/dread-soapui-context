@@ -9,6 +9,7 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 @RestController
+@RequestMapping("/crud01")
 open class TestRestController() {
 
     @GetMapping("/resources")
@@ -47,6 +48,13 @@ open class TestRestController() {
     companion object {
         val repository = ConcurrentHashMap<String, TestResource>()
         private val LOGGER = LoggerFactory.getLogger(TestRestController::class.java)
+
+        init {
+            val testResource = TestResource()
+            testResource.id = "example"
+            testResource.payload = "payload"
+            repository["example"] = testResource
+        }
     }
 }
 

@@ -1,14 +1,14 @@
 Feature: Manually created feature
 
 Scenario: minimal scenario
-  * def RunnerContext = Java.type('eu.k5.dread.karate.RunnerContext');
+  * def RunnerContext = Java.type('eu.k5.dread.soapui.SoapuiContext');
   * def ctx = new RunnerContext()
 
   * def prop = ctx.propertiesStep("prop")
   * print prop.setProperty("key", "value")
 
 
-  * def createResourceStep = ctx.requestStep("createResource").url( "http://localhost:8080/resource" ).request(  read("soapui-manual-createResourceStep.json"))
+  * def createResourceStep = ctx.requestStep("createResource").url( "http://localhost:8080/resource" ).request(  read("createResourceRequest.txt"))
   * def getResourceStep = ctx.requestStep("getResource").url("http://localhost:8080/resource/${#Project#projectProperty}")
   * def updateResourceStep = ctx.requestStep("updateResource").url("http://localhost:8080/resource/${#Project#projectProperty}").request("{ \"id\":\"${#Project#projectProperty}\", \"value\": \"updated\" }")
 

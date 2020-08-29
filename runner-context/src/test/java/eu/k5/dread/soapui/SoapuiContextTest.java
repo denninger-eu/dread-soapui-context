@@ -4,8 +4,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-class RunnerContextTest {
-    SoapuiContext context = new SoapuiContext();
+class SoapuiContextTest {
+    SoapuiContext context = new SoapuiContext(this);
 
     @Test
     void transferDirectWithoutExpression() {
@@ -168,4 +168,18 @@ class RunnerContextTest {
         Assertions.assertEquals(first, second);
     }
 
+    @Test
+    void read_existingFile_returnsContent() {
+        Assertions.assertEquals("testcontent", context.read("test.txt"));
+    }
+
+    @Test
+    void read_missingFile() {
+        try {
+            context.read("notexisting.txt");
+            Assertions.fail("Should cause exception");
+        } catch (IllegalArgumentException exception) {
+
+        }
+    }
 }
