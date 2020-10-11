@@ -20,16 +20,18 @@ testRunner.testCase.testSuite.project.setPropertyValue( "MyProp", someValue )
 com.eviware.soapui.SoapUI.globalProperties.setPropertyValue( "MyProp", someValue )
 
 
-import groovy.json.*; 
+import groovy.json.*;
 def jsonSlurper = new JsonSlurper();
-def json = testRunner.testCase.testSteps['updateResource'].httpRequest.requestContent;
+def json = testRunner.testCase.testSteps['updateResource'].testRequest.response.responseContent;
+log.info(json)
 def object = jsonSlurper.parseText(json);
 object.date = "date";
-testRunner.testCase.testSteps['updateWithDate'].httpRequest.requestContent = new JsonBuilder(object).toPrettyString();
+def newJson = new JsonBuilder(object).toPrettyString();
+testRunner.testCase.testSteps['updateWithDate'].httpRequest.requestContent = newJson
 
-log.info(testRunner.testCase.testSteps['updateWithDate'].testRequest.class.name)
+//log.info(testRunner.testCase.testSteps['updateWithDate'].testRequest.class.name)
 
-log.info(testRunner.testCase.testSteps['updateResource'].class.name)
+//log.info(testRunner.testCase.testSteps['updateResource'].class.name)
 
-log.info(log.getClass())
-log.info("test");
+//log.info(log.getClass())
+//log.info("test");

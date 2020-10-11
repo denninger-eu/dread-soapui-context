@@ -35,7 +35,7 @@ com.eviware.soapui.SoapUI.globalProperties.setPropertyValue( "MyProp", someValue
 
 import groovy.json.*; 
 def jsonSlurper = new JsonSlurper();
-def json = testRunner.testCase.testSteps['updateResource'].httpRequest.requestContent;
+def json = testRunner.testCase.testSteps['updateResource'].testRequest.response.responseContent;
 def object = jsonSlurper.parseText(json);
 object.date = "date";
 testRunner.testCase.testSteps['updateWithDate'].httpRequest.requestContent = new JsonBuilder(object).toPrettyString();

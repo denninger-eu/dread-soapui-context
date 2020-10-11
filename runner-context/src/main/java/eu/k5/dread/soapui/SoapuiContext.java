@@ -31,10 +31,6 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.time.Period;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -231,40 +227,53 @@ public class SoapuiContext {
         }
 
         public HttpRequestWrapper getHttpRequest() {
-            return new HttpRequestWrapper(propertyHolder.getOrCreateProperty(RestRequestContext.REQUEST));
+            return new HttpRequestWrapper(propertyHolder);
         }
 
         public HttpRequestWrapper getTestRequest() {
-            return new HttpRequestWrapper(propertyHolder.getOrCreateProperty(RestRequestContext.REQUEST));
+            return new HttpRequestWrapper(propertyHolder);
         }
     }
 
 
     // replicates com.eviware.soapui.impl.wsdl.teststeps.RestTestRequest
     public static class HttpRequestWrapper {
-        private final Property property;
+        private final PropertyHolder propertyHolder;
 
-        HttpRequestWrapper(Property property) {
-            this.property = property;
+        HttpRequestWrapper(PropertyHolder propertyHolder) {
+            this.propertyHolder = propertyHolder;
         }
 
-        public HttpResponseWrapper getResponse() {
-            return new HttpResponseWrapper();
-        }
 
         public String getRequestContent() {
-            return property.getValue();
+            return propertyHolder.getPropertyValue(RestRequestContext.REQUEST);
         }
 
         public void setRequestContent(String value) {
-            property.setValue(value);
+            propertyHolder.setPropertyValue(RestRequestContext.REQUEST, value);
         }
 
+        public HttpResponseWrapper getResponse() {
+            return new HttpResponseWrapper(propertyHolder);
+        }
 
     }
 
     public static class HttpResponseWrapper {
 
+        private PropertyHolder propertyHolder;
+
+        public HttpResponseWrapper(PropertyHolder propertyHolder) {
+            this.propertyHolder = propertyHolder;
+        }
+
+        public String getResponseContent() {
+            return propertyHolder.getPropertyValue(RestRequestContext.RESPONSE);
+        }
+
+        public void setResponseContent(String value) {
+            propertyHolder.setPropertyValue(RestRequestContext.RESPONSE, value);
+        }
     }
 
     public static class TestSuiteWrapper implements SoapUiWrapper {
@@ -720,6 +729,18 @@ public class SoapuiContext {
 
         public Property getProperty(String name) {
             return properties.get(name);
+        }
+
+        public String getPropertyValue(String name) {
+            Property property = getProperty(name);
+            if (property != null) {
+                return property.getValue();
+            }
+            return null;
+        }
+
+        public void setPropertyValue(String name, String value) {
+            setProperty(name, value);
         }
 
         public Property getOrCreateProperty(String name) {
