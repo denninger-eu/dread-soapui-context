@@ -22,6 +22,7 @@ def globalProperty = com.eviware.soapui.SoapUI.globalProperties.getPropertyValue
 
 def someValue = "value"
 
+
 // Set a test case property
 testRunner.testCase.setPropertyValue( "MyProp", someValue )
 // Set a test suite property
@@ -38,6 +39,10 @@ def json = testRunner.testCase.testSteps['updateResource'].httpRequest.requestCo
 def object = jsonSlurper.parseText(json);
 object.date = "date";
 testRunner.testCase.testSteps['updateWithDate'].httpRequest.requestContent = new JsonBuilder(object).toPrettyString();
+
+log.info(testRunner.testCase.testSteps['updateWithDate'].testRequest.class.name)
+
+log.info(testRunner.testCase.testSteps['updateResource'].class.name)
 
 log.info(log.getClass())
 log.info("test");</script></con:config></con:testStep><con:testStep type="restrequest" name="updateWithDate" id="c46168df-22e0-48b8-9bcf-3e27f7823753"><con:settings/><con:config service="Restservice" resourcePath="/resources/{template}" methodName="PUT" xsi:type="con:RestRequestStep" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:restRequest name="updateWithDate" id="d0626dc3-1679-494d-9c79-554f63b80a0d" mediaType="application/json" postQueryString="false"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/></con:setting></con:settings><con:endpoint>http://localhost:8080/crud01/</con:endpoint><con:request>{

@@ -24,6 +24,13 @@ class RestRequestStepTest {
     }
 
     @Test
+    void urlWithTemplate() {
+        context.setProperty("#Global#baseUrl", "base");
+        request.url("${#Global#baseUrl}/url/${template}").setProperty("template", "value");
+        Assertions.assertEquals("base/url/value", request.url());
+    }
+
+    @Test
     void responseSetArrayAndGet() {
         JSONArray array = new JSONArray();
         array.add(1);

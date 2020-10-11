@@ -31,6 +31,10 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -213,6 +217,7 @@ public class SoapuiContext {
         }
     }
 
+    // replicates com.eviware.soapui.impl.wsdl.teststeps.RestTestRequestStep
     public static class TestStepWrapper implements SoapUiWrapper {
         private final PropertyHolder propertyHolder;
 
@@ -228,14 +233,23 @@ public class SoapuiContext {
         public HttpRequestWrapper getHttpRequest() {
             return new HttpRequestWrapper(propertyHolder.getOrCreateProperty(RestRequestContext.REQUEST));
         }
+
+        public HttpRequestWrapper getTestRequest() {
+            return new HttpRequestWrapper(propertyHolder.getOrCreateProperty(RestRequestContext.REQUEST));
+        }
     }
 
 
+    // replicates com.eviware.soapui.impl.wsdl.teststeps.RestTestRequest
     public static class HttpRequestWrapper {
         private final Property property;
 
         HttpRequestWrapper(Property property) {
             this.property = property;
+        }
+
+        public HttpResponseWrapper getResponse() {
+            return new HttpResponseWrapper();
         }
 
         public String getRequestContent() {
@@ -245,6 +259,11 @@ public class SoapuiContext {
         public void setRequestContent(String value) {
             property.setValue(value);
         }
+
+
+    }
+
+    public static class HttpResponseWrapper {
 
     }
 
@@ -694,6 +713,11 @@ public class SoapuiContext {
             properties.computeIfAbsent(name, Property::new).setValue(value);
         }
 
+        public PropertyHolder property(String name, String value) {
+            setProperty(name, value);
+            return this;
+        }
+
         public Property getProperty(String name) {
             return properties.get(name);
         }
@@ -739,6 +763,7 @@ public class SoapuiContext {
     }
 
     public static class CompositePropertyHolder extends PropertyHolder {
+        private PropertyHolder current = null;
         private List<PropertyHolder> delegates = new ArrayList<>();
 
         public CompositePropertyHolder(String name) {
@@ -747,6 +772,12 @@ public class SoapuiContext {
 
         @Override
         public Property getProperty(String name) {
+            if (current != null) {
+                Property property = current.getProperty(name);
+                if (property != null) {
+                    return property;
+                }
+            }
             for (PropertyHolder delegate : delegates) {
                 Property property = delegate.getProperty(name);
                 if (property != null) {
@@ -754,6 +785,10 @@ public class SoapuiContext {
                 }
             }
             return null;
+        }
+
+        public void setCurrent(PropertyHolder current) {
+            this.current = current;
         }
 
         void addDelegate(PropertyHolder delegate) {
@@ -791,7 +826,12 @@ public class SoapuiContext {
 
         @SuppressWarnings("WeakerAccess") // Used from karate
         public String url() {
-            return expand(getProperty(URL));
+            try {
+                getRunnerContext().compositePropertyHolder.setCurrent(this);
+                return expand(getProperty(URL));
+            } finally {
+                getRunnerContext().compositePropertyHolder.setCurrent(null);
+            }
         }
 
         @SuppressWarnings("WeakerAccess") // Used from karate
@@ -859,6 +899,7 @@ public class SoapuiContext {
             }
         }
 
+
         @SuppressWarnings("WeakerAccess")
         public void assertJsonPathExists(String expression, String expected) {
             boolean exists = Boolean.parseBoolean(expected);
@@ -866,6 +907,21 @@ public class SoapuiContext {
             if (exists != actual) {
                 throw new IllegalArgumentException("json path does not exists '" + expression + "' in \n" + response());
             }
+        }
+
+        @SuppressWarnings("WeakerAccess")
+        public void assertStatus(String expected) {
+            Pattern pattern = Pattern.compile("(?<number>\\d+)", Pattern.MULTILINE);
+            Matcher matcher = pattern.matcher(expected);
+            List<Integer> status = new ArrayList<>();
+            while (matcher.find()) {
+                try {
+                    status.add(Integer.parseInt(matcher.group("number")));
+                } catch (NumberFormatException exception) {
+                    LOGGER.warn("Unable to parse number for status assert" + matcher.group("number"));
+                }
+            }
+            assertStatus(status.stream().mapToInt(Integer::valueOf).toArray());
         }
 
         public void assertStatus(int... status) {
@@ -946,12 +1002,7 @@ public class SoapuiContext {
     }
 
     private static String toString(Reader reader) {
-
-        int[] ints = "string".codePoints().toArray();
-
-
         StringBuilder builder = new StringBuilder();
-
         char[] buffer = new char[4096];
         int length;
         try {

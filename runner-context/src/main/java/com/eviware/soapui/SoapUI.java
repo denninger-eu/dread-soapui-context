@@ -33,13 +33,15 @@ import eu.k5.dread.soapui.SoapuiContext;
  */
 public class SoapUI {
     private static final SoapUI INSTANCE = new SoapUI();
-    private SoapuiContext.PropertyHolder propertyHolder = new SoapuiContext.PropertyHolder("Gobal");
+    private ThreadLocal<SoapuiContext.PropertyHolder> propertyHolders = ThreadLocal.withInitial(
+            () -> new SoapuiContext.PropertyHolder("Global")
+    );
 
     public static SoapUI getInstance() {
         return INSTANCE;
     }
 
     public static SoapuiContext.PropertyHolder getGlobalProperties() {
-        return getInstance().propertyHolder;
+        return getInstance().propertyHolders.get();
     }
 }

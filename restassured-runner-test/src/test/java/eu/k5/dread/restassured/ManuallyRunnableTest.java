@@ -65,6 +65,7 @@ public class ManuallyRunnableTest {
 
         Response response = given()
                 .header("Accept", "application/json")
+                .query
                 .get(read.url())
                 .then().statusCode(200).extract().response();
         read.status(response.statusCode()).response(response.asString());

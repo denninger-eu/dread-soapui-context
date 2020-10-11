@@ -20,6 +20,27 @@ public class DreadAssertionTest {
         Assertions.assertFalse(step.assertJsonExists("$.key2"));
     }
 
+
+    @Test
+    public void assertJsonPathExists_foundAsExpected() {
+        SoapuiContext.RestRequestContext step = context.requestStep("step");
+        step.response("{\"key\":\"value\"}");
+        step.assertJsonPathExists("$.key", "true");
+    }
+    @Test
+    public void assertJsonPathExists_withNotExistingJson_notFound_causesIllegalArgument() {
+        SoapuiContext.RestRequestContext step = context.requestStep("step");
+        step.response("{\"key\":\"value\"}");
+        Assertions.assertThrows(IllegalArgumentException.class, () -> step.assertJsonPathExists("$.key2", "true"));
+    }
+
+    @Test
+    public void assertJsonPathExists_withNotExistingJson_notFoundAsExpected() {
+        SoapuiContext.RestRequestContext step = context.requestStep("step");
+        step.response("{\"key\":\"value\"}");
+        step.assertJsonPathExists("$.key2", "false");
+    }
+
     @Test
     public void jsonExists_withItemInArray_true() {
         SoapuiContext.RestRequestContext step = context.requestStep("step");
@@ -42,15 +63,30 @@ public class DreadAssertionTest {
     }
 
     @Test
+    public void assertStatusWithString_noError() {
+        SoapuiContext.RestRequestContext step = context.requestStep("step");
+        step.status(200);
+        step.assertStatus("202,, 200");
+    }
+
+    @Test
+    public void assertStatusWithLinebreaks_noError() {
+        SoapuiContext.RestRequestContext step = context.requestStep("step");
+        step.status(200);
+        step.assertStatus("202\n 200");
+    }
+
+    @Test
     public void assertStatus_fail() {
         SoapuiContext.RestRequestContext step = context.requestStep("step");
         step.status(200);
-        try {
-            step.assertStatus(202, 201);
-            Assertions.fail("Should cause exception");
-        } catch (IllegalArgumentException e) {
-
-        }
+        Assertions.assertThrows(IllegalArgumentException.class, () -> step.assertStatus(202, 201));
     }
 
+    @Test
+    public void assertStatus_withString_fail() {
+        SoapuiContext.RestRequestContext step = context.requestStep("step");
+        step.status(200);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> step.assertStatus("202, 201"));
+    }
 }
