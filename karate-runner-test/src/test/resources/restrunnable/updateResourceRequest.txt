@@ -1,4 +1,6 @@
 {
+   "date": "${=java.time.LocalDateTime.now()}",
    "payload": "updated",
-   "id": "3708847d-96a8-45b7-b7de-73f2389b4f82"
+   "id": "ffa594c0-4ff6-4d02-b1fb-7b521f986ed4",
+   "age": "0"
 }
