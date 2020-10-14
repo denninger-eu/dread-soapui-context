@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 
-public class RunnerContextGroovyTest {
+public class SoapuiContextGroovyTest {
     SoapuiContext context = new SoapuiContext();
 
     @Test
@@ -73,8 +73,9 @@ public class RunnerContextGroovyTest {
     void scriptSoapUiApi_ProjectSetPropertyValue() {
         String script = "testRunner.testCase.testSuite.project.setPropertyValue(\"property\", \"scriptUpdate\")";
         SoapuiContext.ScriptContext scriptContext = context.groovyScript("name");
-        scriptContext.script(script).execute();
+        String result = scriptContext.script(script).execute();
 
+        System.out.println(result);
         Assertions.assertEquals("scriptUpdate", context.resolvePropertyValue("#Project#property"));
     }
 
@@ -83,6 +84,15 @@ public class RunnerContextGroovyTest {
         context.requestStep("requestStepName").request("requestContent");
         SoapuiContext.ScriptContext script = context.groovyScript("script")
                 .script("def testStep = testRunner.testCase.testSteps[\"requestStepName\"]; testStep.httpRequest.requestContent;");
+        String result = script.execute();
+        Assertions.assertEquals("requestContent", result);
+    }
+
+    @Test
+    void script_expand() {
+        context.requestStep("requestStepName").request("requestContent");
+        SoapuiContext.ScriptContext script = context.groovyScript("script")
+                .script("context.expand('${#requeststepName#request}')");
         String result = script.execute();
         Assertions.assertEquals("requestContent", result);
     }
@@ -113,5 +123,21 @@ public class RunnerContextGroovyTest {
 
     }
 
+    @Test
+    void script_useResponse_withSlurper() {
+        context.requestStep("request").response("{ \"name\": \"John Doe\" }");
+        SoapuiContext.ScriptContext script = context.groovyScript("script").script(
+                "import groovy.json.JsonSlurper; " +
+                        " def jsonSlurper = new JsonSlurper();" +
+                        " def json = testRunner.testCase.testSteps['request'].testRequest.response.responseContent;" +
+                        " log.info(json);" +
+                        " def object = jsonSlurper.parseText(json);" +
+                        " testRunner.testCase.testSteps['request'].httpRequest.requestContent = object.name;" +
+                        " object.name;");
+
+        String result = script.execute();
+        Assertions.assertEquals("John Doe", context.resolveProperty("#request#Request").getValue());
+
+    }
 
 }

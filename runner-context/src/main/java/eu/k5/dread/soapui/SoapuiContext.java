@@ -86,10 +86,10 @@ public class SoapuiContext {
 
     public SoapuiContext(Object testcase) {
         this.testcase = testcase;
-        propertyHolders.put(GLOBAL, SoapUI.getGlobalProperties());
-        propertyHolders.put(PROJECT, new PropertyHolder(PROJECT));
-        propertyHolders.put(TEST_SUITE, new PropertyHolder(TEST_SUITE));
-        propertyHolders.put(TEST_CASE, new PropertyHolder(TEST_CASE));
+        propertyHolders.put(toLowerCase(GLOBAL), SoapUI.getGlobalProperties());
+        propertyHolders.put(toLowerCase(PROJECT), new PropertyHolder(PROJECT));
+        propertyHolders.put(toLowerCase(TEST_SUITE), new PropertyHolder(TEST_SUITE));
+        propertyHolders.put(toLowerCase(TEST_CASE), new PropertyHolder(TEST_CASE));
         propertyHolders.put("", compositePropertyHolder);
     }
 
@@ -129,11 +129,16 @@ public class SoapuiContext {
     private synchronized ScriptEngine getScriptEngine() {
         if (scriptEngine == null) {
             scriptEngine = getScriptEngineManager().getEngineByName("groovy");
-            ProjectWrapper project = new ProjectWrapper(propertyHolders.get(PROJECT));
-            TestSuiteWrapper testSuite = new TestSuiteWrapper(project, propertyHolders.get(TEST_SUITE));
-            TestCaseWrapper testCase = new TestCaseWrapper(this, testSuite, propertyHolders.get(TEST_CASE));
+            ProjectWrapper project = new ProjectWrapper(propertyHolders.get(toLowerCase(PROJECT)));
+            TestSuiteWrapper testSuite = new TestSuiteWrapper(project, propertyHolders.get(toLowerCase(TEST_SUITE)));
+            TestCaseWrapper testCase = new TestCaseWrapper(this, testSuite, propertyHolders.get(toLowerCase(TEST_CASE)));
             scriptEngine.put("testRunner", new TestRunner(this, testCase));
             scriptEngine.put("log", resolveLogger());
+            scriptEngine.put("context", new Object() {
+                public String expand(String value) {
+                    return SoapuiContext.this.expand(value);
+                }
+            });
         }
         return scriptEngine;
     }
@@ -312,10 +317,10 @@ public class SoapuiContext {
     @SuppressWarnings("WeakerAccess") // Used from karate
     public RestRequestContext requestStep(String name) {
         if (propertyHolders.containsKey(name)) {
-            return (RestRequestContext) propertyHolders.get(name);
+            return (RestRequestContext) propertyHolders.get(toLowerCase(name));
         }
         RestRequestContext request = new RestRequestContext(this, name);
-        propertyHolders.put(name, request);
+        propertyHolders.put(toLowerCase(name), request);
         return request;
     }
 
@@ -603,7 +608,7 @@ public class SoapuiContext {
     }
 
     private PropertyHolder getPropertyHolder(String name) {
-        PropertyHolder propertyHolder = propertyHolders.get(name);
+        PropertyHolder propertyHolder = propertyHolders.get(toLowerCase(name));
         if (propertyHolder == null) {
             throw new IllegalArgumentException("Unable to get PropertyHolder: " + name);
         }
@@ -719,7 +724,7 @@ public class SoapuiContext {
         }
 
         public void setProperty(String name, String value) {
-            properties.computeIfAbsent(name, Property::new).setValue(value);
+            properties.computeIfAbsent(toLowerCase(name), Property::new).setValue(value);
         }
 
         public PropertyHolder property(String name, String value) {
@@ -728,7 +733,7 @@ public class SoapuiContext {
         }
 
         public Property getProperty(String name) {
-            return properties.get(name);
+            return properties.get(toLowerCase(name));
         }
 
         public String getPropertyValue(String name) {
@@ -744,13 +749,13 @@ public class SoapuiContext {
         }
 
         public Property getOrCreateProperty(String name) {
-            return properties.computeIfAbsent(name, this::createProperty);
+            return properties.computeIfAbsent(toLowerCase(name), this::createProperty);
         }
 
 
         public Property createProperty(String name) {
             Property property = new Property(name);
-            properties.put(name, property);
+            properties.put(toLowerCase(name), property);
             return property;
         }
 
@@ -932,8 +937,23 @@ public class SoapuiContext {
 
         @SuppressWarnings("WeakerAccess")
         public void assertStatus(String expected) {
+            boolean match = statusAnyMatch(expected);
+            if (!match) {
+                throw new IllegalArgumentException("Expected  status " + expected + " actual " + Integer.valueOf(getProperty(STATUS).value) + " in \n" + response());
+            }
+        }
+
+        @SuppressWarnings("WeakerAccess")
+        public void assertNotStatus(String expected){
+            boolean match = statusAnyMatch(expected);
+            if (match) {
+                throw new IllegalArgumentException("Expected  not status " + expected + " actual " + Integer.valueOf(getProperty(STATUS).value) + " in \n" + response());
+            }
+        }
+
+        private boolean statusAnyMatch(String needle){
             Pattern pattern = Pattern.compile("(?<number>\\d+)", Pattern.MULTILINE);
-            Matcher matcher = pattern.matcher(expected);
+            Matcher matcher = pattern.matcher(needle);
             List<Integer> status = new ArrayList<>();
             while (matcher.find()) {
                 try {
@@ -942,7 +962,9 @@ public class SoapuiContext {
                     LOGGER.warn("Unable to parse number for status assert" + matcher.group("number"));
                 }
             }
-            assertStatus(status.stream().mapToInt(Integer::valueOf).toArray());
+            int actualStatus = Integer.valueOf(getProperty(STATUS).value);
+
+            return status.stream().anyMatch(s -> s == actualStatus);
         }
 
         public void assertStatus(int... status) {
@@ -951,6 +973,15 @@ public class SoapuiContext {
             boolean match = IntStream.of(status).anyMatch(s -> s == actualStatus);
             if (!match) {
                 throw new IllegalArgumentException("Expected status " + Arrays.toString(status) + " actual " + actualStatus + " in \n" + response());
+            }
+        }
+
+        public void assertNotStatus(int... status) {
+            int actualStatus = Integer.valueOf(getProperty(STATUS).value);
+
+            boolean match = IntStream.of(status).anyMatch(s -> s == actualStatus);
+            if (match) {
+                throw new IllegalArgumentException("Expected not status " + Arrays.toString(status) + " actual " + actualStatus + " in \n" + response());
             }
         }
 
@@ -999,6 +1030,7 @@ public class SoapuiContext {
         private String doExecute() {
             try {
                 Property scriptProperty = getProperty(SCRIPT);
+
                 Object result = getRunnerContext().getScriptEngine().eval(scriptProperty.value);
                 if (result != null) {
                     return result.toString();
@@ -1036,6 +1068,12 @@ public class SoapuiContext {
         }
     }
 
+    private static String toLowerCase(String string) {
+        if (string == null) {
+            return null;
+        }
+        return string.toLowerCase();
+    }
 }
 
 

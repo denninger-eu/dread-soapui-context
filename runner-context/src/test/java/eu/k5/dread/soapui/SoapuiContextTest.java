@@ -16,6 +16,14 @@ class SoapuiContextTest {
     }
 
     @Test
+    void transfer_directWithoutExpressionCaseInsensitive() {
+        context.requestStep("test").response("responseValue");
+        context.transfer("#test#response").to("#Project#test");
+        SoapuiContext.Property property = context.resolveProperty("#project#test");
+        Assertions.assertEquals("responseValue", property.getValue());
+    }
+
+    @Test
     void transferFormJsonPath() {
         context.requestStep("test").response("{ \"value\": \"val\"}");
         context.transfer("#test#Response", "$.value", "JSONPATH").to("#Project#test");

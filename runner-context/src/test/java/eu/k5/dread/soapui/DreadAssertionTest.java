@@ -89,4 +89,18 @@ public class DreadAssertionTest {
         step.status(200);
         Assertions.assertThrows(IllegalArgumentException.class, () -> step.assertStatus("202, 201"));
     }
+
+    @Test
+    public void assertNotStatus_withString_ok() {
+        SoapuiContext.RestRequestContext step = context.requestStep("step");
+        step.status(200);
+        step.assertNotStatus("202, 201");
+    }
+
+    @Test
+    public void assertNotStatus_withString_fail() {
+        SoapuiContext.RestRequestContext step = context.requestStep("step");
+        step.status(200);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> step.assertNotStatus("200, 201"));
+    }
 }
