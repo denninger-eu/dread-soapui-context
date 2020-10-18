@@ -944,7 +944,7 @@ public class SoapuiContext {
         }
 
         @SuppressWarnings("WeakerAccess")
-        public void assertNotStatus(String expected){
+        public void assertInvalidStatus(String expected){
             boolean match = statusAnyMatch(expected);
             if (match) {
                 throw new IllegalArgumentException("Expected  not status " + expected + " actual " + Integer.valueOf(getProperty(STATUS).value) + " in \n" + response());
